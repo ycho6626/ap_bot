@@ -1,0 +1,189 @@
+# Minimal canonical solutions for AP Calculus AB/BC
+# This file contains a small set of canonical solutions for testing and development
+
+canonical_solutions:
+  - id: "canonical-001"
+    subject: "calc"
+    exam_variant: "calc_ab"
+    unit: "Unit 2: Differentiation"
+    skill: "Power Rule"
+    problem_key: "power_rule_basic_001"
+    question_template: "Find the derivative of f(x) = x^n using the Power Rule."
+    steps:
+      - step: 1
+        description: "Identify the function and apply the Power Rule"
+        work: "f(x) = x^n"
+      - step: 2
+        description: "Apply the Power Rule: d/dx(x^n) = nx^(n-1)"
+        work: "f'(x) = nx^(n-1)"
+      - step: 3
+        description: "State the final answer"
+        work: "f'(x) = nx^(n-1)"
+    final_answer: "nx^(n-1)"
+    rubric:
+      points: 3
+      criteria:
+        - "Correctly applies Power Rule"
+        - "Shows work clearly"
+        - "States final answer"
+    tags: ["power_rule", "derivatives", "basic"]
+
+  - id: "canonical-002"
+    subject: "calc"
+    exam_variant: "calc_ab"
+    unit: "Unit 2: Differentiation"
+    skill: "Chain Rule"
+    problem_key: "chain_rule_basic_001"
+    question_template: "Find the derivative of f(x) = (g(x))^n using the Chain Rule."
+    steps:
+      - step: 1
+        description: "Identify the outer and inner functions"
+        work: "Outer: f(u) = u^n, Inner: u = g(x)"
+      - step: 2
+        description: "Apply the Chain Rule: d/dx[f(g(x))] = f'(g(x)) · g'(x)"
+        work: "f'(x) = n(g(x))^(n-1) · g'(x)"
+      - step: 3
+        description: "State the final answer"
+        work: "f'(x) = n(g(x))^(n-1) · g'(x)"
+    final_answer: "n(g(x))^(n-1) · g'(x)"
+    rubric:
+      points: 4
+      criteria:
+        - "Correctly identifies outer and inner functions"
+        - "Applies Chain Rule correctly"
+        - "Shows work clearly"
+        - "States final answer"
+    tags: ["chain_rule", "derivatives", "composite_functions"]
+
+  - id: "canonical-003"
+    subject: "calc"
+    exam_variant: "calc_ab"
+    unit: "Unit 4: Integration"
+    skill: "Power Rule for Integration"
+    problem_key: "integration_power_rule_001"
+    question_template: "Find the indefinite integral of f(x) = x^n using the Power Rule for Integration."
+    steps:
+      - step: 1
+        description: "Identify the function to integrate"
+        work: "∫ x^n dx"
+      - step: 2
+        description: "Apply the Power Rule for Integration: ∫ x^n dx = x^(n+1)/(n+1) + C"
+        work: "∫ x^n dx = x^(n+1)/(n+1) + C"
+      - step: 3
+        description: "State the final answer with constant of integration"
+        work: "∫ x^n dx = x^(n+1)/(n+1) + C"
+    final_answer: "x^(n+1)/(n+1) + C"
+    rubric:
+      points: 3
+      criteria:
+        - "Correctly applies Power Rule for Integration"
+        - "Includes constant of integration"
+        - "States final answer clearly"
+    tags: ["integration", "power_rule", "antiderivatives"]
+
+  - id: "canonical-004"
+    subject: "calc"
+    exam_variant: "calc_bc"
+    unit: "Unit 10: Infinite Series"
+    skill: "Ratio Test"
+    problem_key: "ratio_test_convergence_001"
+    question_template: "Determine if the series Σ(n=1 to ∞) a_n converges using the Ratio Test."
+    steps:
+      - step: 1
+        description: "Set up the ratio test limit"
+        work: "L = lim(n→∞) |a_(n+1)/a_n|"
+      - step: 2
+        description: "Substitute the general terms"
+        work: "L = lim(n→∞) |a_(n+1)/a_n|"
+      - step: 3
+        description: "Evaluate the limit"
+        work: "L = [evaluated limit]"
+      - step: 4
+        description: "Apply the Ratio Test conclusion"
+        work: "If L < 1, series converges; if L > 1, series diverges; if L = 1, test is inconclusive"
+      - step: 5
+        description: "State the conclusion"
+        work: "The series [converges/diverges/is inconclusive] by the Ratio Test"
+    final_answer: "Series [converges/diverges/is inconclusive] by the Ratio Test"
+    rubric:
+      points: 5
+      criteria:
+        - "Correctly sets up ratio test"
+        - "Shows algebraic manipulation"
+        - "Evaluates limit correctly"
+        - "Applies Ratio Test conclusion"
+        - "States final conclusion"
+    tags: ["ratio_test", "series", "convergence", "advanced"]
+
+  - id: "canonical-005"
+    subject: "calc"
+    exam_variant: "calc_bc"
+    unit: "Unit 9: Parametric Equations"
+    skill: "Parametric Derivatives"
+    problem_key: "parametric_derivatives_001"
+    question_template: "Find dy/dx for the parametric equations x = f(t) and y = g(t)."
+    steps:
+      - step: 1
+        description: "Identify the parametric equations"
+        work: "x = f(t), y = g(t)"
+      - step: 2
+        description: "Find dx/dt and dy/dt"
+        work: "dx/dt = f'(t), dy/dt = g'(t)"
+      - step: 3
+        description: "Apply the parametric derivative formula"
+        work: "dy/dx = (dy/dt)/(dx/dt) = g'(t)/f'(t)"
+      - step: 4
+        description: "State the final answer"
+        work: "dy/dx = g'(t)/f'(t)"
+    final_answer: "g'(t)/f'(t)"
+    rubric:
+      points: 4
+      criteria:
+        - "Correctly identifies parametric equations"
+        - "Finds derivatives of x and y with respect to t"
+        - "Applies parametric derivative formula"
+        - "States final answer clearly"
+    tags: ["parametric_equations", "derivatives", "bc_only"]
+
+  - id: "canonical-006"
+    subject: "calc"
+    exam_variant: "calc_ab"
+    unit: "Unit 5: Applications of Integration"
+    skill: "Fundamental Theorem of Calculus"
+    problem_key: "ftc_part1_001"
+    question_template: "Use the Fundamental Theorem of Calculus Part 1 to find the derivative of F(x) = ∫[a to x] f(t) dt."
+    steps:
+      - step: 1
+        description: "Identify the integral function"
+        work: "F(x) = ∫[a to x] f(t) dt"
+      - step: 2
+        description: "Apply FTC Part 1: d/dx[∫[a to x] f(t) dt] = f(x)"
+        work: "F'(x) = f(x)"
+      - step: 3
+        description: "State the final answer"
+        work: "F'(x) = f(x)"
+    final_answer: "f(x)"
+    rubric:
+      points: 3
+      criteria:
+        - "Correctly identifies the integral function"
+        - "Applies FTC Part 1 correctly"
+        - "States final answer clearly"
+    tags: ["fundamental_theorem", "integration", "ftc_part1"]
+
+# Metadata for the canonical solutions
+metadata:
+  version: "1.0.0"
+  created_at: "2024-01-01T00:00:00Z"
+  description: "Minimal set of canonical solutions for AP Calculus AB/BC testing"
+  total_solutions: 6
+  ab_solutions: 4
+  bc_solutions: 2
+  common_skills:
+    - "Power Rule"
+    - "Chain Rule"
+    - "Integration"
+    - "Fundamental Theorem of Calculus"
+  bc_specific_skills:
+    - "Ratio Test"
+    - "Parametric Derivatives"

@@ -1,0 +1,23 @@
+{
+  "name": "@ap/analyzer",
+  "version": "1.0.0",
+  "description": "Quality analysis and deployment gates for AP Calculus tutor",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "vam": "tsx src/vam.ts",
+    "gate": "tsx src/gate.ts"
+  },
+  "dependencies": {
+    "@ap/shared": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}

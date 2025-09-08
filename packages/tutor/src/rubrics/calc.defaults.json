@@ -1,0 +1,258 @@
+{
+  "calc_ab": {
+    "formatting": {
+      "units": {
+        "required": true,
+        "enforce": true,
+        "format": "parentheses",
+        "examples": ["m/s", "ft/s²", "rad/s"]
+      },
+      "significant_figures": {
+        "required": true,
+        "enforce": true,
+        "default": 3,
+        "rounding": "half_away_from_zero"
+      },
+      "decimal_places": {
+        "required": false,
+        "enforce": false,
+        "default": 2
+      },
+      "scientific_notation": {
+        "required": false,
+        "enforce": false,
+        "threshold": 1000
+      }
+    },
+    "justification": {
+      "theorems": {
+        "required": true,
+        "enforce": true,
+        "theorems": [
+          "Mean Value Theorem",
+          "Intermediate Value Theorem", 
+          "Rolle's Theorem",
+          "Fundamental Theorem of Calculus"
+        ],
+        "format": "name_theorem_when_used"
+      },
+      "rules": {
+        "required": true,
+        "enforce": true,
+        "rules": [
+          "Chain Rule",
+          "Product Rule",
+          "Quotient Rule",
+          "Power Rule"
+        ],
+        "format": "state_rule_when_applied"
+      },
+      "steps": {
+        "required": true,
+        "enforce": true,
+        "format": "show_all_work",
+        "min_steps": 2
+      }
+    },
+    "notation": {
+      "derivatives": {
+        "format": "dy/dx",
+        "alternative": "f'(x)",
+        "enforce": true
+      },
+      "integrals": {
+        "format": "∫",
+        "enforce": true
+      },
+      "limits": {
+        "format": "lim",
+        "enforce": true
+      },
+      "functions": {
+        "format": "f(x)",
+        "enforce": true
+      }
+    },
+    "content": {
+      "topics": [
+        "limits",
+        "continuity",
+        "derivatives",
+        "applications_of_derivatives",
+        "integrals",
+        "applications_of_integrals",
+        "differential_equations"
+      ],
+      "excluded_topics": [
+        "series",
+        "polar_coordinates",
+        "parametric_equations",
+        "vector_calculus"
+      ]
+    }
+  },
+  "calc_bc": {
+    "formatting": {
+      "units": {
+        "required": true,
+        "enforce": true,
+        "format": "parentheses",
+        "examples": ["m/s", "ft/s²", "rad/s", "rad/s²"]
+      },
+      "significant_figures": {
+        "required": true,
+        "enforce": true,
+        "default": 3,
+        "rounding": "half_away_from_zero"
+      },
+      "decimal_places": {
+        "required": false,
+        "enforce": false,
+        "default": 2
+      },
+      "scientific_notation": {
+        "required": false,
+        "enforce": false,
+        "threshold": 1000
+      }
+    },
+    "justification": {
+      "theorems": {
+        "required": true,
+        "enforce": true,
+        "theorems": [
+          "Mean Value Theorem",
+          "Intermediate Value Theorem",
+          "Rolle's Theorem",
+          "Fundamental Theorem of Calculus",
+          "Comparison Test",
+          "Ratio Test",
+          "Root Test",
+          "Integral Test"
+        ],
+        "format": "name_theorem_when_used"
+      },
+      "rules": {
+        "required": true,
+        "enforce": true,
+        "rules": [
+          "Chain Rule",
+          "Product Rule",
+          "Quotient Rule",
+          "Power Rule",
+          "Integration by Parts",
+          "U-Substitution",
+          "Partial Fractions"
+        ],
+        "format": "state_rule_when_applied"
+      },
+      "steps": {
+        "required": true,
+        "enforce": true,
+        "format": "show_all_work",
+        "min_steps": 2
+      },
+      "series": {
+        "required": true,
+        "enforce": true,
+        "justification_phrases": [
+          "by the ratio test",
+          "by the root test",
+          "by the comparison test",
+          "by the integral test",
+          "converges absolutely",
+          "converges conditionally",
+          "diverges by the divergence test"
+        ],
+        "format": "include_convergence_justification"
+      }
+    },
+    "notation": {
+      "derivatives": {
+        "format": "dy/dx",
+        "alternative": "f'(x)",
+        "enforce": true
+      },
+      "integrals": {
+        "format": "∫",
+        "enforce": true
+      },
+      "limits": {
+        "format": "lim",
+        "enforce": true
+      },
+      "functions": {
+        "format": "f(x)",
+        "enforce": true
+      },
+      "series": {
+        "format": "∑",
+        "enforce": true
+      },
+      "polar": {
+        "format": "r = f(θ)",
+        "enforce": true
+      },
+      "parametric": {
+        "format": "x = f(t), y = g(t)",
+        "enforce": true
+      }
+    },
+    "content": {
+      "topics": [
+        "limits",
+        "continuity",
+        "derivatives",
+        "applications_of_derivatives",
+        "integrals",
+        "applications_of_integrals",
+        "differential_equations",
+        "series",
+        "polar_coordinates",
+        "parametric_equations",
+        "vector_calculus"
+      ],
+      "excluded_topics": []
+    }
+  },
+  "common": {
+    "formatting": {
+      "show_work": {
+        "required": true,
+        "enforce": true,
+        "format": "step_by_step"
+      },
+      "final_answer": {
+        "required": true,
+        "enforce": true,
+        "format": "boxed_or_highlighted"
+      },
+      "graphing": {
+        "required": false,
+        "enforce": false,
+        "format": "when_requested"
+      }
+    },
+    "language": {
+      "tone": "professional",
+      "clarity": "high",
+      "precision": "mathematical",
+      "encouragement": "moderate"
+    },
+    "structure": {
+      "introduction": {
+        "required": false,
+        "format": "brief_context"
+      },
+      "solution": {
+        "required": true,
+        "format": "step_by_step",
+        "min_steps": 2
+      },
+      "conclusion": {
+        "required": false,
+        "format": "brief_summary"
+      }
+    }
+  }
+}
