@@ -99,16 +99,15 @@ export function CitationsSidebar({
                     {source.snippet}
                   </p>
                   
-                  <button
-                    onClick={() => {
-                      // TODO: Implement source viewing
-                      console.log('View source:', source.id);
-                    }}
+                  <a
+                    href={`/lessons/${source.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center text-xs text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     <ExternalLink className="h-3 w-3 mr-1" />
                     View Source
-                  </button>
+                  </a>
                 </div>
               ))}
             </div>

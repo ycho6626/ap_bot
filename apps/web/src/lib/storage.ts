@@ -113,6 +113,20 @@ export const examVariantStorage = {
   },
 
   /**
+   * Get the current exam variant (alias for get)
+   */
+  getVariant: (): 'calc_ab' | 'calc_bc' => {
+    return storage.get<ExamVariant>(STORAGE_KEYS.EXAM_VARIANT, 'calc_ab');
+  },
+
+  /**
+   * Set the current exam variant (alias for set)
+   */
+  setVariant: (variant: 'calc_ab' | 'calc_bc'): void => {
+    storage.set(STORAGE_KEYS.EXAM_VARIANT, variant);
+  },
+
+  /**
    * Check if the variant is AB
    */
   isAB: (): boolean => {

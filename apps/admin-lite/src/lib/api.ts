@@ -8,6 +8,17 @@ const api = ky.create({
     limit: 3,
     methods: ['get', 'post', 'put', 'delete'],
   },
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        // Add JWT token to Authorization header if available
+        const token = localStorage.getItem('admin_jwt_token');
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`);
+        }
+      },
+    ],
+  },
 });
 
 /**

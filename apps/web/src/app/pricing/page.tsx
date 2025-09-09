@@ -106,8 +106,8 @@ export default function PricingPage() {
     setIsCreatingCheckout(priceId);
     try {
       const session = await startCheckout(priceId);
-      // In a real app, redirect to Stripe Checkout
-      window.open(session.url, '_blank');
+      // Redirect to Stripe Checkout
+      window.location.assign(session.url);
       toast.success('Redirecting to checkout...');
     } catch (error) {
       console.error('Error creating checkout session:', error);

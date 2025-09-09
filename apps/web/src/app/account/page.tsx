@@ -116,8 +116,8 @@ export default function AccountPage() {
     setIsCreatingCheckout(priceId);
     try {
       const session = await startCheckout(priceId);
-      // In a real app, redirect to Stripe Checkout
-      window.open(session.url, '_blank');
+      // Redirect to Stripe Checkout
+      window.location.assign(session.url);
       toast.success('Redirecting to checkout...');
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -130,7 +130,7 @@ export default function AccountPage() {
   const handleManageBilling = async () => {
     try {
       const portal = await openBillingPortal();
-      window.open(portal.url, '_blank');
+      window.location.assign(portal.url);
       toast.success('Opening billing portal...');
     } catch (error) {
       console.error('Error opening billing portal:', error);

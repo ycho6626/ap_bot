@@ -26,5 +26,8 @@ export * from './rateLimit';
 // Types
 export * from './types';
 
+// Authentication
+export * from './auth';
+
 // HTTP utilities
 export * from './httpUtils';

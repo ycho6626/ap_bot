@@ -67,6 +67,10 @@
       "types": "./dist/types.d.ts",
       "default": "./dist/types.js"
     },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
     "./httpUtils": {
       "types": "./dist/httpUtils.d.ts",
       "default": "./dist/httpUtils.js"

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import 'katex/dist/katex.min.css';
 import katex from 'katex';
 import { cn } from '@/lib/utils';
 
@@ -20,9 +19,15 @@ export function Math({
 }: MathProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side to avoid hydration mismatches
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isClient) return;
 
     const container = containerRef.current;
     container.innerHTML = '';
@@ -96,7 +101,7 @@ export function Math({
         setError('Failed to render mathematical content');
       }
     }
-  }, [content, displayMode, errorFallback]);
+  }, [content, displayMode, errorFallback, isClient]);
 
   if (error) {
     return (
@@ -104,6 +109,15 @@ export function Math({
         <div className="text-red-600 bg-red-50 border border-red-200 rounded p-2 text-sm">
           {error}
         </div>
+      </div>
+    );
+  }
+
+  // Show loading state during SSR to prevent hydration mismatches
+  if (!isClient) {
+    return (
+      <div className={cn('katex-container', className)}>
+        <span className="text-gray-500">Loading math...</span>
       </div>
     );
   }

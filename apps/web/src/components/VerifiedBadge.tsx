@@ -19,12 +19,12 @@ export function VerifiedBadge({ verified, className }: VerifiedBadgeProps) {
     >
       {verified ? (
         <>
-          <CheckCircle className="h-3 w-3 mr-1" />
+          <CheckCircle className="h-3 w-3 mr-1" data-testid="verified-icon" />
           Verified
         </>
       ) : (
         <>
-          <AlertCircle className="h-3 w-3 mr-1" />
+          <AlertCircle className="h-3 w-3 mr-1" data-testid="not-verified-icon" />
           Not Verified
         </>
       )}

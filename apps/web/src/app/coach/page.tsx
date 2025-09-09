@@ -7,10 +7,10 @@ import { formatExamVariant, formatTrustScore } from '@/lib/utils';
 import { examVariantStorage } from '@/lib/storage';
 import type { ExamVariant } from '@ap/shared/types';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { TrustBar } from '@/components/TrustBar';
+import { TrustMeter } from '@/components/TrustMeter';
 import { CitationsSidebar } from '@/components/CitationsSidebar';
 import { ExamVariantSelector } from '@/components/ExamVariantSelector';
-import { Math } from '@/components/katex/Math';
+import { MathMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -228,9 +228,7 @@ export default function CoachPage() {
                           )}
                         </div>
                         
-                        <div className="prose prose-sm max-w-none">
-                          <Math content={message.content} />
-                        </div>
+                        <MathMarkdownRenderer content={message.content} />
 
                         {message.type === 'assistant' && message.trustScore !== undefined && (
                           <div className="mt-3">
@@ -240,7 +238,7 @@ export default function CoachPage() {
                                 {formatTrustScore(message.trustScore)}
                               </span>
                             </div>
-                            <TrustBar score={message.trustScore} />
+                            <TrustMeter score={message.trustScore} />
                           </div>
                         )}
 

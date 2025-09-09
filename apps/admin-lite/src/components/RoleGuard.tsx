@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserRole } from '@ap/shared/types';
+import { UserRole, type JwtPayload } from '@ap/shared/types';
+import { parseJwtToken, hasRequiredRole } from '@ap/shared/auth';
 import { ShieldXIcon, LoaderIcon } from 'lucide-react';
 
 interface RoleGuardProps {
@@ -22,19 +23,43 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
   useEffect(() => {
     const checkUserRole = async () => {
       try {
-        // In a real app, this would check the user's authentication status
-        // and fetch their role from the API or local storage
-        // For now, we'll simulate this with a mock implementation
+        // Check for JWT token in localStorage
+        const token = localStorage.getItem('admin_jwt_token');
         
-        // Check if we have a stored role (for testing)
-        const storedRole = localStorage.getItem('admin_user_role');
-        if (storedRole) {
-          setUserRole(storedRole as UserRole);
-        } else {
-          // Default to 'public' for demo purposes
-          // In production, this would redirect to login
-          setUserRole('public');
+        if (!token) {
+          if (fallback) {
+            setUserRole(null);
+            setLoading(false);
+            return;
+          }
+          setError('Teacher sign-in required');
+          setLoading(false);
+          return;
         }
+
+        // Parse and validate JWT token
+        const authResult = parseJwtToken(token);
+        
+        if (!authResult.isValid) {
+          setError(authResult.error || 'Invalid authentication token');
+          setLoading(false);
+          return;
+        }
+
+        if (!authResult.payload) {
+          setError('Invalid token payload');
+          setLoading(false);
+          return;
+        }
+
+        // Check if user has required role
+        if (!hasRequiredRole(authResult.payload.role, requiredRole)) {
+          setError(`Access denied. Required role: ${requiredRole}`);
+          setLoading(false);
+          return;
+        }
+
+        setUserRole(authResult.payload.role);
       } catch (err) {
         console.error('Failed to check user role:', err);
         setError('Failed to verify user permissions');
@@ -44,7 +69,7 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
     };
 
     checkUserRole();
-  }, []);
+  }, [requiredRole]);
 
   if (loading) {
     return (
@@ -69,7 +94,7 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
     );
   }
 
-  if (!userRole || !hasRequiredRole(userRole, requiredRole)) {
+  if (error) {
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -78,38 +103,31 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <ShieldXIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500 mb-4">
-            You need {requiredRole} role or higher to access this page.
-          </p>
-          <p className="text-sm text-gray-400">
-            Current role: {userRole || 'none'}
-          </p>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+            {error === 'Teacher sign-in required' ? 'Teacher Sign-In Required' : 'Access Denied'}
+          </h2>
+          <p className="text-gray-500 mb-4">{error}</p>
+          {userRole && (
+            <p className="text-sm text-gray-400">
+              Current role: {userRole}
+            </p>
+          )}
         </div>
       </div>
     );
   }
 
+  // Show fallback if no user role and fallback is provided
+  if (!userRole && fallback) {
+    return <>{fallback}</>;
+  }
+
   return <>{children}</>;
 }
 
-/**
- * Check if user has the required role or higher
- * Role hierarchy: public < calc_paid < teacher < all_paid
- */
-function hasRequiredRole(userRole: UserRole, requiredRole: UserRole): boolean {
-  const roleHierarchy: Record<UserRole, number> = {
-    public: 0,
-    calc_paid: 1,
-    teacher: 2,
-    all_paid: 3,
-  };
-
-  return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
-}
 
 /**
- * Hook to get current user role
+ * Hook to get current user role from JWT token
  */
 export function useUserRole() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -118,11 +136,24 @@ export function useUserRole() {
   useEffect(() => {
     const checkUserRole = async () => {
       try {
-        const storedRole = localStorage.getItem('admin_user_role');
-        setUserRole(storedRole as UserRole || 'public');
+        const token = localStorage.getItem('admin_jwt_token');
+        
+        if (!token) {
+          setUserRole(null);
+          setLoading(false);
+          return;
+        }
+
+        const authResult = parseJwtToken(token);
+        
+        if (authResult.isValid && authResult.payload) {
+          setUserRole(authResult.payload.role);
+        } else {
+          setUserRole(null);
+        }
       } catch (err) {
         console.error('Failed to check user role:', err);
-        setUserRole('public');
+        setUserRole(null);
       } finally {
         setLoading(false);
       }

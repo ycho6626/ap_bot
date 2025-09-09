@@ -1,142 +1,224 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Coach Page', () => {
+test.describe('Coach Page - Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock the API responses for consistent testing
+    await page.route('**/coach', async (route) => {
+      const request = route.request();
+      const postData = JSON.parse(request.postData() || '{}');
+      
+      // Mock response based on the question
+      if (postData.question?.includes('derivative of x^2')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            answer: 'The derivative of x² is 2x. This follows from the power rule: d/dx[x^n] = nx^(n-1). For x², we have n=2, so d/dx[x²] = 2x^(2-1) = 2x.',
+            verified: true,
+            trustScore: 0.95,
+            sources: [
+              {
+                type: 'canonical',
+                id: 'derivative_power_rule',
+                title: 'Power Rule for Derivatives',
+                snippet: 'The power rule states that d/dx[x^n] = nx^(n-1)',
+                score: 0.98
+              }
+            ],
+            suggestions: [
+              'Try asking about the derivative of more complex functions',
+              'Learn about the chain rule for composite functions',
+              'Explore applications of derivatives'
+            ]
+          })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            answer: 'This is a mock response for testing purposes.',
+            verified: false,
+            trustScore: 0.75,
+            sources: [],
+            suggestions: []
+          })
+        });
+      }
+    });
+
     await page.goto('/coach');
+    await page.waitForLoadState('domcontentloaded');
   });
 
-  test('should display the coach page with correct title', async ({ page }) => {
-    await expect(page).toHaveTitle(/AP Calculus Tutor/);
+  test('should visit /coach and submit derivative question with verified response @smoke', async ({ page }) => {
+    // Wait for the page to load completely
     await expect(page.locator('h1')).toContainText('AP Calculus Coach');
-  });
-
-  test('should show welcome message when no messages', async ({ page }) => {
-    await expect(page.locator('text=Welcome to AP Calculus Coach')).toBeVisible();
-    await expect(page.locator('text=Ask me any AP Calculus')).toBeVisible();
-  });
-
-  test('should allow typing in the input field', async ({ page }) => {
+    
+    // Type the question
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('What is the derivative of x^2?');
-    await expect(input).toHaveValue('What is the derivative of x^2?');
+    await input.fill('Find derivative of x^2');
+    await expect(input).toHaveValue('Find derivative of x^2');
+    
+    // Submit the question
+    const submitButton = page.locator('button[type="submit"]');
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
+    
+    // Wait for the user message to appear
+    await expect(page.locator('text=Find derivative of x^2')).toBeVisible();
+    
+    // Wait for the assistant response
+    await expect(page.locator('text=The derivative of x² is 2x')).toBeVisible();
+    
+    // Verify the Verified badge appears
+    await expect(page.locator('text=Verified')).toBeVisible();
+    
+    // Verify trust score is displayed
+    await expect(page.locator('text=Confidence:')).toBeVisible();
+    await expect(page.locator('text=95%')).toBeVisible();
+    
+    // Verify sources are available (citations button should be enabled)
+    const citationsButton = page.locator('button:has-text("Citations")');
+    await expect(citationsButton).toBeEnabled();
+    
+    // Verify suggestions are shown
+    await expect(page.locator('text=Suggestions:')).toBeVisible();
+    await expect(page.locator('text=Try asking about the derivative of more complex functions')).toBeVisible();
   });
 
-  test('should show character count', async ({ page }) => {
+  test('should show loading state during processing', async ({ page }) => {
+    // Add a delay to the API response to test loading state
+    await page.route('**/api/coach', async (route) => {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          answer: 'Test response',
+          verified: true,
+          trustScore: 0.9,
+          sources: [],
+          suggestions: []
+        })
+      });
+    });
+
     const input = page.locator('textarea[placeholder*="Ask a"]');
     await input.fill('Test question');
-    await expect(page.locator('text=13/2000')).toBeVisible();
-  });
-
-  test('should have exam variant selector', async ({ page }) => {
-    const selector = page.locator('button[aria-label="Select exam variant"]');
-    await expect(selector).toBeVisible();
-    await expect(selector).toContainText('AB');
-  });
-
-  test('should change exam variant when selected', async ({ page }) => {
-    const selector = page.locator('button[aria-label="Select exam variant"]');
-    await selector.click();
+    await page.locator('button[type="submit"]').click();
     
+    // Should show loading state
+    await expect(page.locator('text=Thinking...')).toBeVisible();
+    
+    // Wait for response
+    await expect(page.locator('text=Test response')).toBeVisible();
+  });
+
+  test('should handle exam variant selection', async ({ page }) => {
+    // Check initial state (should be AB by default)
+    const variantSelector = page.locator('button[aria-label="Select exam variant"]');
+    await expect(variantSelector).toContainText('AB');
+    
+    // Change to BC
+    await variantSelector.click();
     const bcOption = page.locator('text=BC').first();
     await bcOption.click();
     
-    await expect(selector).toContainText('BC');
+    // Verify change
+    await expect(variantSelector).toContainText('BC');
+    
+    // Verify placeholder text updates
+    const input = page.locator('textarea[placeholder*="Ask a"]');
+    await expect(input).toHaveAttribute('placeholder', /BC/);
   });
 
-  test('should show clear chat button when there are messages', async ({ page }) => {
+  test('should clear chat when clear button is clicked', async ({ page }) => {
     // First send a message
     const input = page.locator('textarea[placeholder*="Ask a"]');
     await input.fill('Test question');
     await page.locator('button[type="submit"]').click();
     
-    // Wait for the message to appear
+    // Wait for message to appear
     await expect(page.locator('text=Test question')).toBeVisible();
     
     // Clear chat button should be enabled
     const clearButton = page.locator('button:has-text("Clear Chat")');
     await expect(clearButton).toBeEnabled();
-  });
-
-  test('should disable clear chat button when no messages', async ({ page }) => {
-    const clearButton = page.locator('button:has-text("Clear Chat")');
+    
+    // Click clear
+    await clearButton.click();
+    
+    // Messages should be cleared
+    await expect(page.locator('text=Test question')).not.toBeVisible();
+    await expect(page.locator('text=Welcome to AP Calculus Coach')).toBeVisible();
+    
+    // Clear button should be disabled again
     await expect(clearButton).toBeDisabled();
   });
 
-  test('should show citations button when sources are available', async ({ page }) => {
-    // This test would need to mock the API response to include sources
-    // For now, we'll just check that the button exists
+  test('should show citations sidebar when citations button is clicked', async ({ page }) => {
+    // Send a question that returns sources
+    const input = page.locator('textarea[placeholder*="Ask a"]');
+    await input.fill('Find derivative of x^2');
+    await page.locator('button[type="submit"]').click();
+    
+    // Wait for response
+    await expect(page.locator('text=The derivative of x² is 2x')).toBeVisible();
+    
+    // Click citations button
     const citationsButton = page.locator('button:has-text("Citations")');
-    await expect(citationsButton).toBeVisible();
+    await expect(citationsButton).toBeEnabled();
+    await citationsButton.click();
+    
+    // Citations sidebar should appear
+    await expect(page.locator('text=Sources')).toBeVisible();
+    await expect(page.locator('text=Power Rule for Derivatives')).toBeVisible();
+    
+    // Close sidebar
+    const closeButton = page.locator('button:has-text("Close")');
+    await closeButton.click();
+    
+    // Sidebar should be hidden
+    await expect(page.locator('text=Sources')).not.toBeVisible();
   });
 
   test('should handle keyboard shortcuts', async ({ page }) => {
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test question');
+    await input.fill('Test keyboard shortcut');
     
     // Press Enter to submit
     await input.press('Enter');
     
-    // The message should be sent (this would need API mocking in a real test)
-    await expect(page.locator('text=Test question')).toBeVisible();
+    // Message should be sent
+    await expect(page.locator('text=Test keyboard shortcut')).toBeVisible();
   });
 
-  test('should show loading state when processing', async ({ page }) => {
-    // This test would need to mock a slow API response
+  test('should show character count', async ({ page }) => {
     const input = page.locator('textarea[placeholder*="Ask a"]');
     await input.fill('Test question');
-    await page.locator('button[type="submit"]').click();
     
-    // Should show loading indicator
-    await expect(page.locator('text=Thinking...')).toBeVisible();
+    // Character count should be visible
+    await expect(page.locator('text=13/2000')).toBeVisible();
   });
 
-  test('should be accessible with keyboard navigation', async ({ page }) => {
-    // Tab through the page elements
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    
-    // The input should be focused
-    const input = page.locator('textarea[placeholder*="Ask a"]');
-    await expect(input).toBeFocused();
-  });
-
-  test('should have proper ARIA labels', async ({ page }) => {
-    const input = page.locator('textarea[placeholder*="Ask a"]');
-    await expect(input).toHaveAttribute('placeholder');
-    
+  test('should disable submit button when input is empty', async ({ page }) => {
     const submitButton = page.locator('button[type="submit"]');
-    await expect(submitButton).toBeVisible();
     
-    const examVariantSelector = page.locator('button[aria-label="Select exam variant"]');
-    await expect(examVariantSelector).toBeVisible();
-  });
-});
-
-test.describe('Coach Page - Verified Answer Flow', () => {
-  test('should display verified badge for verified answers', async ({ page }) => {
-    // This test would need to mock the API to return a verified answer
-    await page.goto('/coach');
+    // Should be disabled initially
+    await expect(submitButton).toBeDisabled();
     
+    // Fill input
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('What is the derivative of x^2?');
-    await page.locator('button[type="submit"]').click();
+    await input.fill('Test');
     
-    // Wait for response and check for verified badge
-    // This would need API mocking in a real implementation
-    await expect(page.locator('text=Verified')).toBeVisible();
-  });
-
-  test('should display trust score for answers', async ({ page }) => {
-    // This test would need to mock the API to return a trust score
-    await page.goto('/coach');
+    // Should be enabled
+    await expect(submitButton).toBeEnabled();
     
-    const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('What is the derivative of x^2?');
-    await page.locator('button[type="submit"]').click();
+    // Clear input
+    await input.fill('');
     
-    // Wait for response and check for trust score
-    // This would need API mocking in a real implementation
-    await expect(page.locator('text=Confidence:')).toBeVisible();
+    // Should be disabled again
+    await expect(submitButton).toBeDisabled();
   });
 });

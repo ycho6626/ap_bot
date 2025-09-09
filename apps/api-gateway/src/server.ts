@@ -9,6 +9,8 @@ import { healthRoutes } from './routes/health';
 import { kbRoutes } from './routes/kb';
 import { coachRoutes } from './routes/coach';
 import { reviewRoutes } from './routes/review';
+import { authRoutes } from './routes/auth';
+import { paymentRoutes } from './routes/payments';
 import { stripeWebhookRoutes } from './routes/webhooks/stripe';
 
 /**
@@ -103,6 +105,8 @@ export async function createServer() {
   await server.register(kbRoutes, { prefix: '/kb' });
   await server.register(coachRoutes, { prefix: '/coach' });
   await server.register(reviewRoutes, { prefix: '/review' });
+  await server.register(authRoutes, { prefix: '/auth' });
+  await server.register(paymentRoutes, { prefix: '/payments' });
   await server.register(stripeWebhookRoutes, { prefix: '/webhooks' });
 
   // Global error handler

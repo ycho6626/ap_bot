@@ -691,9 +691,9 @@ export async function coach(request: CoachRequest): Promise<CoachResponseSimple>
     suggestions: response.suggestions,
     metadata: {
       exam_variant: response.metadata.examVariant,
-      topic: response.metadata.topic,
-      subtopic: response.metadata.subtopic,
-      difficulty: response.metadata.difficulty,
+      ...(response.metadata.topic && { topic: response.metadata.topic }),
+      ...(response.metadata.subtopic && { subtopic: response.metadata.subtopic }),
+      ...(response.metadata.difficulty && { difficulty: response.metadata.difficulty }),
       retry_count: response.metadata.retryCount,
     },
   };
