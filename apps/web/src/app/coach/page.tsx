@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Send, Calculator, BookOpen } from 'lucide-react';
-import { apiClient, type CoachRequest, type CoachResponse } from '@/lib/api';
-import { formatExamVariant, formatTrustScore, storage, CONSTANTS } from '@/lib/utils';
+import { coach, type CoachResponse } from '@/lib/api.bridge';
+import { formatExamVariant, formatTrustScore } from '@/lib/utils';
+import { examVariantStorage } from '@/lib/storage';
 import type { ExamVariant } from '@ap/shared/types';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { TrustBar } from '@/components/TrustBar';
 import { CitationsSidebar } from '@/components/CitationsSidebar';
 import { ExamVariantSelector } from '@/components/ExamVariantSelector';
-import { KaTeXRenderer } from '@/components/KaTeXRenderer';
+import { Math } from '@/components/katex/Math';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 
 interface ChatMessage {
@@ -23,27 +27,25 @@ interface ChatMessage {
   suggestions?: string[] | undefined;
 }
 
-const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
 export default function CoachPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [examVariant, setExamVariant] = useState<ExamVariant>('calc_ab');
   const [showCitations, setShowCitations] = useState(false);
-  const [sessionId] = useState(() => storage.get('session_id', generateSessionId()));
+  // const [sessionId] = useState(() => sessionStorage.getSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load saved exam variant from localStorage
   useEffect(() => {
-    const savedVariant = storage.get<ExamVariant>('exam_variant', 'calc_ab');
+    const savedVariant = examVariantStorage.get();
     setExamVariant(savedVariant);
   }, []);
 
   // Save exam variant to localStorage when changed
   useEffect(() => {
-    storage.set('exam_variant', examVariant);
+    examVariantStorage.set(examVariant);
   }, [examVariant]);
 
   // Auto-scroll to bottom when new messages arrive
@@ -72,21 +74,7 @@ export default function CoachPage() {
     setIsLoading(true);
 
     try {
-      const request: CoachRequest = {
-        subject: 'calc',
-        examVariant,
-        mode: 'vam',
-        question: input.trim(),
-        context: {
-          sessionId,
-          previousQuestions: messages
-            .filter(m => m.type === 'user')
-            .slice(-5)
-            .map(m => m.content),
-        },
-      };
-
-      const response = await apiClient.askCoach(request);
+      const response = await coach(input.trim(), examVariant);
 
       const assistantMessage: ChatMessage = {
         id: `assistant_${Date.now()}`,
@@ -159,21 +147,23 @@ export default function CoachPage() {
                 value={examVariant}
                 onChange={setExamVariant}
               />
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={clearChat}
-                className="btn btn-outline text-sm"
                 disabled={messages.length === 0}
               >
                 Clear Chat
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowCitations(!showCitations)}
-                className="btn btn-outline text-sm"
                 disabled={getLatestSources().length === 0}
               >
                 <BookOpen className="h-4 w-4 mr-2" />
                 Citations
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -186,21 +176,23 @@ export default function CoachPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-4">
               {messages.length === 0 && (
-                <div className="text-center py-12">
-                  <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to AP Calculus Coach</h3>
-                  <p className="text-gray-600 mb-6">
-                    Ask me any AP Calculus {formatExamVariant(examVariant)} question and I'll provide verified answers with step-by-step solutions.
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-500">
-                    <p>Try asking:</p>
-                    <ul className="space-y-1">
-                      <li>• "Find the derivative of x² + 3x + 2"</li>
-                      <li>• "Evaluate the integral of sin(x) from 0 to π"</li>
-                      <li>• "What is the limit as x approaches 0 of (sin x)/x?"</li>
-                    </ul>
-                  </div>
-                </div>
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <CardTitle className="text-lg mb-2">Welcome to AP Calculus Coach</CardTitle>
+                    <CardDescription className="mb-6">
+                      Ask me any AP Calculus {formatExamVariant(examVariant)} question and I'll provide verified answers with step-by-step solutions.
+                    </CardDescription>
+                    <div className="space-y-2 text-sm text-gray-500">
+                      <p>Try asking:</p>
+                      <ul className="space-y-1">
+                        <li>• "Find the derivative of x² + 3x + 2"</li>
+                        <li>• "Evaluate the integral of sin(x) from 0 to π"</li>
+                        <li>• "What is the limit as x approaches 0 of (sin x)/x?"</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {messages.map((message) => (
@@ -237,7 +229,7 @@ export default function CoachPage() {
                         </div>
                         
                         <div className="prose prose-sm max-w-none">
-                          <KaTeXRenderer content={message.content} />
+                          <Math content={message.content} />
                         </div>
 
                         {message.type === 'assistant' && message.trustScore !== undefined && (
@@ -296,33 +288,33 @@ export default function CoachPage() {
             {/* Input Form */}
             <form onSubmit={handleSubmit} className="flex space-x-4">
               <div className="flex-1">
-                <textarea
+                <Textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={`Ask a ${formatExamVariant(examVariant)} question...`}
-                  className="input resize-none"
+                  className="resize-none"
                   rows={3}
-                  maxLength={CONSTANTS.MAX_QUESTION_LENGTH}
+                  maxLength={2000}
                   disabled={isLoading}
                 />
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-xs text-gray-500">
-                    {input.length}/{CONSTANTS.MAX_QUESTION_LENGTH}
+                    {input.length}/2000
                   </span>
                   <div className="text-xs text-gray-500">
                     Press Enter to send, Shift+Enter for new line
                   </div>
                 </div>
               </div>
-              <button
+              <Button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="btn btn-primary px-6 py-3 self-end"
+                className="px-6 py-3 self-end"
               >
                 <Send className="h-4 w-4" />
-              </button>
+              </Button>
             </form>
           </div>
 

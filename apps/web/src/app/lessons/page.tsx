@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Search, BookOpen, Clock, Tag } from 'lucide-react';
-import { apiClient, type KbSearchRequest } from '@/lib/api';
-import { formatExamVariant, storage, CONSTANTS, debounce } from '@/lib/utils';
+import { searchKB } from '@/lib/api.bridge';
+import { formatExamVariant, debounce } from '@/lib/utils';
+import { examVariantStorage, searchHistoryStorage } from '@/lib/storage';
 import type { ExamVariant } from '@ap/shared/types';
-import { KaTeXRenderer } from '@/components/KaTeXRenderer';
+import { Math as MathRenderer } from '@/components/katex/Math';
 import { ExamVariantSelector } from '@/components/ExamVariantSelector';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
 
 interface LessonDocument {
@@ -43,18 +48,18 @@ export default function LessonsPage() {
 
   // Load saved exam variant from localStorage
   useEffect(() => {
-    const savedVariant = storage.get<ExamVariant>('exam_variant', 'calc_ab');
+    const savedVariant = examVariantStorage.get();
     setExamVariant(savedVariant);
   }, []);
 
   // Save exam variant to localStorage when changed
   useEffect(() => {
-    storage.set('exam_variant', examVariant);
+    examVariantStorage.set(examVariant);
   }, [examVariant]);
 
   // Load search history from localStorage
   useEffect(() => {
-    const history = storage.get<string[]>('search_history', []);
+    const history = searchHistoryStorage.get();
     setSearchHistory(history);
   }, []);
 
@@ -67,22 +72,13 @@ export default function LessonsPage() {
 
     setIsLoading(true);
     try {
-      const request: KbSearchRequest = {
-        subject: 'calc',
-        examVariant,
-        query: query.trim(),
-        limit: CONSTANTS.DEFAULT_SEARCH_LIMIT,
-        minScore: 0.1,
-      };
-
-      const response = await apiClient.searchKnowledgeBase(request);
+      const response = await searchKB(query.trim(), examVariant);
       setResults(response.results);
 
       // Add to search history
       if (query.trim() && !searchHistory.includes(query.trim())) {
-        const newHistory = [query.trim(), ...searchHistory.slice(0, 9)]; // Keep last 10
-        setSearchHistory(newHistory);
-        storage.set('search_history', newHistory);
+        searchHistoryStorage.add(query.trim());
+        setSearchHistory(searchHistoryStorage.get());
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -99,8 +95,12 @@ export default function LessonsPage() {
 
   const handleDocumentClick = async (documentId: string) => {
     try {
-      const response = await apiClient.getDocument(documentId);
-      setSelectedDocument(response.document);
+      // For now, we'll use the search results to find the document
+      // In a real implementation, this would call a getDocument API
+      const document = results.find(r => r.document.id === documentId);
+      if (document) {
+        setSelectedDocument(document.document);
+      }
     } catch (error) {
       console.error('Error fetching document:', error);
       toast.error('Failed to load document. Please try again.');
@@ -160,21 +160,23 @@ export default function LessonsPage() {
         <div className="flex gap-6">
           {/* Search Sidebar */}
           <div className="w-80 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Lessons</h2>
-              
-              {/* Search Input */}
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder={`Search ${formatExamVariant(examVariant)} lessons...`}
-                  className="input pl-10"
-                  maxLength={CONSTANTS.MAX_QUERY_LENGTH}
-                />
-              </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Search Lessons</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Search Input */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    placeholder={`Search ${formatExamVariant(examVariant)} lessons...`}
+                    className="pl-10"
+                    maxLength={500}
+                  />
+                </div>
 
               {/* Search History */}
               {searchHistory.length > 0 && (
@@ -194,99 +196,105 @@ export default function LessonsPage() {
                 </div>
               )}
 
-              {/* Search Results */}
-              {isLoading && (
-                <div className="text-center py-4">
-                  <div className="animate-pulse flex space-x-1 justify-center">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                {/* Search Results */}
+                {isLoading && (
+                  <div className="text-center py-4">
+                    <div className="animate-pulse flex space-x-1 justify-center">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">Searching...</p>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">Searching...</p>
-                </div>
-              )}
+                )}
 
-              {!isLoading && results.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">
-                    {results.length} result{results.length !== 1 ? 's' : ''} found
-                  </h3>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {results.map((result, index) => (
-                      <div
-                        key={`${result.document.id}-${index}`}
-                        className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => handleDocumentClick(result.document.id)}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPartitionColor(result.document.partition)}`}
-                          >
-                            {getPartitionLabel(result.document.partition)}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {Math.round(result.score * 100)}% match
-                          </span>
-                        </div>
-                        
-                        {result.document.topic && (
-                          <div className="flex items-center text-xs text-gray-600 mb-1">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {result.document.topic}
-                            {result.document.subtopic && ` • ${result.document.subtopic}`}
-                          </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-700 line-clamp-3 mb-2">
-                          {result.snippet}
-                        </p>
-                        
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {new Date(result.document.updated_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
+                {!isLoading && results.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                      {results.length} result{results.length !== 1 ? 's' : ''} found
+                    </h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {results.map((result, index) => (
+                        <Card
+                          key={`${result.document.id}-${index}`}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleDocumentClick(result.document.id)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <Badge
+                                variant="secondary"
+                                className={`text-xs ${getPartitionColor(result.document.partition)}`}
+                              >
+                                {getPartitionLabel(result.document.partition)}
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                {Math.round(result.score * 100)}% match
+                              </span>
+                            </div>
+                            
+                            {result.document.topic && (
+                              <div className="flex items-center text-xs text-gray-600 mb-1">
+                                <Tag className="h-3 w-3 mr-1" />
+                                {result.document.topic}
+                                {result.document.subtopic && ` • ${result.document.subtopic}`}
+                              </div>
+                            )}
+                            
+                            <p className="text-sm text-gray-700 line-clamp-3 mb-2">
+                              {result.snippet}
+                            </p>
+                            
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {new Date(result.document.updated_at).toLocaleDateString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {!isLoading && searchQuery && results.length === 0 && (
-                <div className="text-center py-8">
-                  <BookOpen className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">No lessons found for your search.</p>
-                </div>
-              )}
-            </div>
+                {!isLoading && searchQuery && results.length === 0 && (
+                  <div className="text-center py-8">
+                    <BookOpen className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No lessons found for your search.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Main Content */}
           <div className="flex-1">
             {selectedDocument ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <Card>
                 {/* Document Header */}
-                <div className="border-b border-gray-200 p-6">
+                <CardHeader className="border-b">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      <CardTitle className="text-xl mb-2">
                         {selectedDocument.topic || 'Lesson Document'}
-                      </h2>
+                      </CardTitle>
                       {selectedDocument.subtopic && (
-                        <p className="text-sm text-gray-600">{selectedDocument.subtopic}</p>
+                        <CardDescription>{selectedDocument.subtopic}</CardDescription>
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPartitionColor(selectedDocument.partition)}`}
+                      <Badge
+                        variant="secondary"
+                        className={`text-xs ${getPartitionColor(selectedDocument.partition)}`}
                       >
                         {getPartitionLabel(selectedDocument.partition)}
-                      </span>
-                      <button
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setSelectedDocument(null)}
-                        className="btn btn-outline text-sm"
                       >
                         Close
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   
@@ -302,32 +310,34 @@ export default function LessonsPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </CardHeader>
 
                 {/* Document Content */}
-                <div className="p-6">
+                <CardContent className="p-6">
                   <div className="prose prose-lg max-w-none">
-                    <KaTeXRenderer content={selectedDocument.content} displayMode={true} />
+                    <MathRenderer content={selectedDocument.content} displayMode={true} />
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to AP Calculus Lessons</h3>
-                <p className="text-gray-600 mb-6">
-                  Search our knowledge base to find detailed lessons, examples, and explanations for AP Calculus {formatExamVariant(examVariant)}.
-                </p>
-                <div className="space-y-2 text-sm text-gray-500">
-                  <p>Try searching for:</p>
-                  <ul className="space-y-1">
-                    <li>• "derivatives"</li>
-                    <li>• "integration techniques"</li>
-                    <li>• "limits and continuity"</li>
-                    <li>• "applications of derivatives"</li>
-                  </ul>
-                </div>
-              </div>
+              <Card className="text-center py-12">
+                <CardContent>
+                  <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <CardTitle className="text-lg mb-2">Welcome to AP Calculus Lessons</CardTitle>
+                  <CardDescription className="mb-6">
+                    Search our knowledge base to find detailed lessons, examples, and explanations for AP Calculus {formatExamVariant(examVariant)}.
+                  </CardDescription>
+                  <div className="space-y-2 text-sm text-gray-500">
+                    <p>Try searching for:</p>
+                    <ul className="space-y-1">
+                      <li>• "derivatives"</li>
+                      <li>• "integration techniques"</li>
+                      <li>• "limits and continuity"</li>
+                      <li>• "applications of derivatives"</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
