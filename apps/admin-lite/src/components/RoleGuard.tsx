@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserRole, type JwtPayload } from '@ap/shared/types';
+import { UserRole } from '@ap/shared/types';
 import { parseJwtToken, hasRequiredRole } from '@ap/shared/auth';
 import { ShieldXIcon, LoaderIcon } from 'lucide-react';
 
@@ -21,11 +21,11 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkUserRole = async () => {
+    const checkUserRole = () => {
       try {
         // Check for JWT token in localStorage
         const token = localStorage.getItem('admin_jwt_token');
-        
+
         if (!token) {
           if (fallback) {
             setUserRole(null);
@@ -39,9 +39,9 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
 
         // Parse and validate JWT token
         const authResult = parseJwtToken(token);
-        
+
         if (!authResult.isValid) {
-          setError(authResult.error || 'Invalid authentication token');
+          setError(authResult.error ?? 'Invalid authentication token');
           setLoading(false);
           return;
         }
@@ -68,15 +68,15 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
       }
     };
 
-    checkUserRole();
+    void checkUserRole();
   }, [requiredRole]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <LoaderIcon className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Checking permissions...</p>
+      <div className='flex items-center justify-center min-h-screen'>
+        <div className='text-center'>
+          <LoaderIcon className='h-8 w-8 animate-spin text-gray-400 mx-auto mb-4' />
+          <p className='text-gray-500'>Checking permissions...</p>
         </div>
       </div>
     );
@@ -84,11 +84,11 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <ShieldXIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500">{error}</p>
+      <div className='flex items-center justify-center min-h-screen'>
+        <div className='text-center'>
+          <ShieldXIcon className='h-12 w-12 text-red-400 mx-auto mb-4' />
+          <h2 className='text-lg font-semibold text-gray-900 mb-2'>Access Denied</h2>
+          <p className='text-gray-500'>{error}</p>
         </div>
       </div>
     );
@@ -100,18 +100,14 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
     }
 
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <ShieldXIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+      <div className='flex items-center justify-center min-h-screen'>
+        <div className='text-center'>
+          <ShieldXIcon className='h-12 w-12 text-red-400 mx-auto mb-4' />
+          <h2 className='text-lg font-semibold text-gray-900 mb-2'>
             {error === 'Teacher sign-in required' ? 'Teacher Sign-In Required' : 'Access Denied'}
           </h2>
-          <p className="text-gray-500 mb-4">{error}</p>
-          {userRole && (
-            <p className="text-sm text-gray-400">
-              Current role: {userRole}
-            </p>
-          )}
+          <p className='text-gray-500 mb-4'>{error}</p>
+          {userRole && <p className='text-sm text-gray-400'>Current role: {userRole}</p>}
         </div>
       </div>
     );
@@ -125,7 +121,6 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
   return <>{children}</>;
 }
 
-
 /**
  * Hook to get current user role from JWT token
  */
@@ -134,10 +129,10 @@ export function useUserRole() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkUserRole = async () => {
+    const checkUserRole = () => {
       try {
         const token = localStorage.getItem('admin_jwt_token');
-        
+
         if (!token) {
           setUserRole(null);
           setLoading(false);
@@ -145,7 +140,7 @@ export function useUserRole() {
         }
 
         const authResult = parseJwtToken(token);
-        
+
         if (authResult.isValid && authResult.payload) {
           setUserRole(authResult.payload.role);
         } else {
@@ -159,7 +154,7 @@ export function useUserRole() {
       }
     };
 
-    checkUserRole();
+    void checkUserRole();
   }, []);
 
   return { userRole, loading };

@@ -11,11 +11,11 @@ interface MathProps {
   errorFallback?: boolean;
 }
 
-export function Math({ 
-  content, 
-  className = '', 
+export function Math({
+  content,
+  className = '',
   displayMode = false,
-  errorFallback = true 
+  errorFallback = true,
 }: MathProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function Math({
       // Split content by LaTeX expressions
       const latexRegex = /\$([^$]+)\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g;
       const parts = content.split(latexRegex);
-      const matches = content.match(latexRegex) || [];
+      const matches = content.match(latexRegex) ?? [];
 
       let partIndex = 0;
       let matchIndex = 0;
@@ -46,7 +46,7 @@ export function Math({
         // Add text content
         if (parts[partIndex]) {
           const textSpan = document.createElement('span');
-          textSpan.textContent = parts[partIndex] || '';
+          textSpan.textContent = parts[partIndex] ?? '';
           textSpan.className = 'katex-text';
           container.appendChild(textSpan);
         }
@@ -56,13 +56,11 @@ export function Math({
           const latexContent = matches[matchIndex];
           if (latexContent) {
             const isInline = latexContent.startsWith('$') && latexContent.endsWith('$');
-            const latexText = isInline 
-              ? latexContent.slice(1, -1) 
-              : latexContent;
+            const latexText = isInline ? latexContent.slice(1, -1) : latexContent;
 
             try {
               const rendered = katex.renderToString(latexText, {
-                displayMode: displayMode || !isInline,
+                displayMode: displayMode ?? !isInline,
                 throwOnError: false,
                 strict: false,
                 trust: true,
@@ -82,7 +80,8 @@ export function Math({
               if (errorFallback) {
                 const fallbackSpan = document.createElement('span');
                 fallbackSpan.textContent = latexContent;
-                fallbackSpan.className = 'katex-error text-red-600 bg-red-50 px-1 py-0.5 rounded text-sm';
+                fallbackSpan.className =
+                  'katex-error text-red-600 bg-red-50 px-1 py-0.5 rounded text-sm';
                 container.appendChild(fallbackSpan);
               } else {
                 setError(`LaTeX rendering error: ${katexError}`);
@@ -106,7 +105,7 @@ export function Math({
   if (error) {
     return (
       <div className={cn('katex-error-container', className)}>
-        <div className="text-red-600 bg-red-50 border border-red-200 rounded p-2 text-sm">
+        <div className='text-red-600 bg-red-50 border border-red-200 rounded p-2 text-sm'>
           {error}
         </div>
       </div>
@@ -117,36 +116,31 @@ export function Math({
   if (!isClient) {
     return (
       <div className={cn('katex-container', className)}>
-        <span className="text-gray-500">Loading math...</span>
+        <span className='text-gray-500'>Loading math...</span>
       </div>
     );
   }
 
-  return (
-    <div 
-      ref={containerRef} 
-      className={cn('katex-container', className)}
-    />
-  );
+  return <div ref={containerRef} className={cn('katex-container', className)} />;
 }
 
 /**
  * Inline math component for use within text
  */
 export function InlineMath({ content, className }: { content: string; className?: string }) {
-  return <Math content={content} className={className || ''} displayMode={false} />;
+  return <Math content={content} className={className ?? ''} displayMode={false} />;
 }
 
 /**
  * Display math component for standalone equations
  */
 export function DisplayMath({ content, className }: { content: string; className?: string }) {
-  return <Math content={content} className={className || ''} displayMode={true} />;
+  return <Math content={content} className={className ?? ''} displayMode={true} />;
 }
 
 /**
  * Math block component that handles both inline and display math
  */
 export function MathBlock({ content, className }: { content: string; className?: string }) {
-  return <Math content={content} className={className || ''} displayMode={true} />;
+  return <Math content={content} className={className ?? ''} displayMode={true} />;
 }

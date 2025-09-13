@@ -15,7 +15,11 @@ vi.mock('openai', () => {
       },
     })),
     APIError: class extends Error {
-      constructor(public status: number, public code: string, message: string) {
+      constructor(
+        public status: number,
+        public code: string,
+        message: string
+      ) {
         super(message);
       }
     },
@@ -37,7 +41,7 @@ vi.mock('@ap/shared', () => ({
   httpUtils: {
     isTimeoutError: vi.fn(() => false),
     isNetworkError: vi.fn(() => false),
-    getRetryDelay: vi.fn((attempt) => 1000 * Math.pow(2, attempt)),
+    getRetryDelay: vi.fn(attempt => 1000 * Math.pow(2, attempt)),
   },
   traceLlmOperation: vi.fn((name, model, fn) => fn()),
 }));
@@ -55,10 +59,12 @@ describe('LLMClient', () => {
   describe('complete', () => {
     it('should complete a conversation successfully', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: 'Test response' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: 'Test response' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: {
           prompt_tokens: 10,
           completion_tokens: 5,
@@ -87,10 +93,12 @@ describe('LLMClient', () => {
 
     it('should include system message when provided', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: 'Test response' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: 'Test response' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
         model: 'gpt-5',
       };
@@ -118,17 +126,21 @@ describe('LLMClient', () => {
       const error = new Error('API Error');
       mockOpenAI.chat.completions.create.mockRejectedValue(error);
 
-      await expect(client.complete({
-        messages: [{ role: 'user', content: 'Test question' }],
-      })).rejects.toThrow('LLM request failed: API Error');
+      await expect(
+        client.complete({
+          messages: [{ role: 'user', content: 'Test question' }],
+        })
+      ).rejects.toThrow('LLM request failed: API Error');
     });
 
     it('should use fallback models when primary fails', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: 'Test response' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: 'Test response' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
         model: 'gpt-4o',
       };
@@ -151,10 +163,12 @@ describe('LLMClient', () => {
   describe('completeJSON', () => {
     it('should parse JSON response correctly', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: '{"result": "success"}' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: '{"result": "success"}' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
         model: 'gpt-5',
       };
@@ -170,29 +184,35 @@ describe('LLMClient', () => {
 
     it('should throw error for invalid JSON', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: 'Invalid JSON' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: 'Invalid JSON' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
         model: 'gpt-5',
       };
 
       mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
 
-      await expect(client.completeJSON({
-        messages: [{ role: 'user', content: 'Test question' }],
-      })).rejects.toThrow('Invalid JSON response');
+      await expect(
+        client.completeJSON({
+          messages: [{ role: 'user', content: 'Test question' }],
+        })
+      ).rejects.toThrow('Invalid JSON response');
     });
   });
 
   describe('completeWithRetry', () => {
     it('should retry on retryable errors', async () => {
       const mockResponse = {
-        choices: [{
-          message: { content: 'Test response' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { content: 'Test response' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
         model: 'gpt-5',
       };
@@ -203,9 +223,12 @@ describe('LLMClient', () => {
         .mockRejectedValueOnce(new Error('Rate limit'))
         .mockResolvedValueOnce(mockResponse);
 
-      const result = await client.completeWithRetry({
-        messages: [{ role: 'user', content: 'Test question' }],
-      }, 2);
+      const result = await client.completeWithRetry(
+        {
+          messages: [{ role: 'user', content: 'Test question' }],
+        },
+        2
+      );
 
       expect(result.content).toBe('Test response');
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(3);
@@ -215,9 +238,11 @@ describe('LLMClient', () => {
       const error = new Error('Non-retryable error');
       mockOpenAI.chat.completions.create.mockRejectedValue(error);
 
-      await expect(client.completeWithRetry({
-        messages: [{ role: 'user', content: 'Test question' }],
-      })).rejects.toThrow('Non-retryable error');
+      await expect(
+        client.completeWithRetry({
+          messages: [{ role: 'user', content: 'Test question' }],
+        })
+      ).rejects.toThrow('Non-retryable error');
 
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
     });

@@ -91,11 +91,12 @@ export default function CoachPage() {
     } catch (error) {
       console.error('Error asking coach:', error);
       toast.error('Failed to get answer. Please try again.');
-      
+
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
         type: 'assistant',
-        content: 'I apologize, but I encountered an error while processing your question. Please try again or rephrase your question.',
+        content:
+          'I apologize, but I encountered an error while processing your question. Please try again or rephrase your question.',
         timestamp: new Date(),
         verified: false,
         trustScore: 0,
@@ -110,7 +111,7 @@ export default function CoachPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      void handleSubmit(e);
     }
   };
 
@@ -120,48 +121,49 @@ export default function CoachPage() {
   };
 
   const getLatestSources = () => {
-    const lastAssistantMessage = [...messages].reverse().find(m => m.type === 'assistant' && m.sources);
+    const lastAssistantMessage = [...messages]
+      .reverse()
+      .find(m => m.type === 'assistant' && m.sources);
     return lastAssistantMessage?.sources || [];
   };
 
   const getLatestSuggestions = () => {
-    const lastAssistantMessage = [...messages].reverse().find(m => m.type === 'assistant' && m.suggestions);
-    return lastAssistantMessage?.suggestions || [];
+    const lastAssistantMessage = [...messages]
+      .reverse()
+      .find(m => m.type === 'assistant' && m.suggestions);
+    return lastAssistantMessage?.suggestions ?? [];
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Calculator className="h-8 w-8 text-primary-600" />
+      <header className='bg-white shadow-sm border-b'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='flex justify-between items-center py-4'>
+            <div className='flex items-center space-x-4'>
+              <Calculator className='h-8 w-8 text-primary-600' />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">AP Calculus Coach</h1>
-                <p className="text-sm text-gray-600">{formatExamVariant(examVariant)}</p>
+                <h1 className='text-xl font-bold text-gray-900'>AP Calculus Coach</h1>
+                <p className='text-sm text-gray-600'>{formatExamVariant(examVariant)}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <ExamVariantSelector
-                value={examVariant}
-                onChange={setExamVariant}
-              />
+            <div className='flex items-center space-x-4'>
+              <ExamVariantSelector value={examVariant} onChange={setExamVariant} />
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={clearChat}
                 disabled={messages.length === 0}
               >
                 Clear Chat
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={() => setShowCitations(!showCitations)}
                 disabled={getLatestSources().length === 0}
               >
-                <BookOpen className="h-4 w-4 mr-2" />
+                <BookOpen className='h-4 w-4 mr-2' />
                 Citations
               </Button>
             </div>
@@ -169,23 +171,24 @@ export default function CoachPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6 h-[calc(100vh-200px)]">
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
+        <div className='flex gap-6 h-[calc(100vh-200px)]'>
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col">
+          <div className='flex-1 flex flex-col'>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            <div className='flex-1 overflow-y-auto space-y-4 mb-4'>
               {messages.length === 0 && (
-                <Card className="text-center py-12">
+                <Card className='text-center py-12'>
                   <CardContent>
-                    <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <CardTitle className="text-lg mb-2">Welcome to AP Calculus Coach</CardTitle>
-                    <CardDescription className="mb-6">
-                      Ask me any AP Calculus {formatExamVariant(examVariant)} question and I'll provide verified answers with step-by-step solutions.
+                    <Calculator className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+                    <CardTitle className='text-lg mb-2'>Welcome to AP Calculus Coach</CardTitle>
+                    <CardDescription className='mb-6'>
+                      Ask me any AP Calculus {formatExamVariant(examVariant)} question and I'll
+                      provide verified answers with step-by-step solutions.
                     </CardDescription>
-                    <div className="space-y-2 text-sm text-gray-500">
+                    <div className='space-y-2 text-sm text-gray-500'>
                       <p>Try asking:</p>
-                      <ul className="space-y-1">
+                      <ul className='space-y-1'>
                         <li>• "Find the derivative of x² + 3x + 2"</li>
                         <li>• "Evaluate the integral of sin(x) from 0 to π"</li>
                         <li>• "What is the limit as x approaches 0 of (sin x)/x?"</li>
@@ -195,46 +198,44 @@ export default function CoachPage() {
                 </Card>
               )}
 
-              {messages.map((message) => (
+              {messages.map(message => (
                 <div
                   key={message.id}
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-3xl ${
-                      message.type === 'user'
-                        ? 'chat-user'
-                        : 'chat-assistant'
+                      message.type === 'user' ? 'chat-user' : 'chat-assistant'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className='flex items-start space-x-3'>
                       {message.type === 'assistant' && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                            <Calculator className="h-4 w-4 text-primary-600" />
+                        <div className='flex-shrink-0'>
+                          <div className='w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center'>
+                            <Calculator className='h-4 w-4 text-primary-600' />
                           </div>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="text-sm font-medium text-gray-900">
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center space-x-2 mb-2'>
+                          <span className='text-sm font-medium text-gray-900'>
                             {message.type === 'user' ? 'You' : 'AP Calculus Coach'}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className='text-xs text-gray-500'>
                             {message.timestamp.toLocaleTimeString()}
                           </span>
                           {message.type === 'assistant' && message.verified !== undefined && (
                             <VerifiedBadge verified={message.verified} />
                           )}
                         </div>
-                        
+
                         <MathMarkdownRenderer content={message.content} />
 
                         {message.type === 'assistant' && message.trustScore !== undefined && (
-                          <div className="mt-3">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-xs text-gray-600">Confidence:</span>
-                              <span className="text-xs font-medium">
+                          <div className='mt-3'>
+                            <div className='flex items-center space-x-2 mb-1'>
+                              <span className='text-xs text-gray-600'>Confidence:</span>
+                              <span className='text-xs font-medium'>
                                 {formatTrustScore(message.trustScore)}
                               </span>
                             </div>
@@ -242,18 +243,20 @@ export default function CoachPage() {
                           </div>
                         )}
 
-                        {message.type === 'assistant' && message.suggestions && message.suggestions.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-xs text-gray-600 mb-2">Suggestions:</p>
-                            <ul className="space-y-1">
-                              {message.suggestions.map((suggestion, index) => (
-                                <li key={index} className="text-xs text-gray-700">
-                                  • {suggestion}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        {message.type === 'assistant' &&
+                          message.suggestions &&
+                          message.suggestions.length > 0 && (
+                            <div className='mt-3'>
+                              <p className='text-xs text-gray-600 mb-2'>Suggestions:</p>
+                              <ul className='space-y-1'>
+                                {message.suggestions.map((suggestion, index) => (
+                                  <li key={index} className='text-xs text-gray-700'>
+                                    • {suggestion}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -261,19 +264,19 @@ export default function CoachPage() {
               ))}
 
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="chat-assistant max-w-3xl">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                        <Calculator className="h-4 w-4 text-primary-600" />
+                <div className='flex justify-start'>
+                  <div className='chat-assistant max-w-3xl'>
+                    <div className='flex items-center space-x-3'>
+                      <div className='w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center'>
+                        <Calculator className='h-4 w-4 text-primary-600' />
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-pulse flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <div className='flex items-center space-x-2'>
+                        <div className='animate-pulse flex space-x-1'>
+                          <div className='w-2 h-2 bg-gray-400 rounded-full'></div>
+                          <div className='w-2 h-2 bg-gray-400 rounded-full'></div>
+                          <div className='w-2 h-2 bg-gray-400 rounded-full'></div>
                         </div>
-                        <span className="text-sm text-gray-600">Thinking...</span>
+                        <span className='text-sm text-gray-600'>Thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -284,34 +287,32 @@ export default function CoachPage() {
             </div>
 
             {/* Input Form */}
-            <form onSubmit={handleSubmit} className="flex space-x-4">
-              <div className="flex-1">
+            <form onSubmit={e => void handleSubmit(e)} className='flex space-x-4'>
+              <div className='flex-1'>
                 <Textarea
                   ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={`Ask a ${formatExamVariant(examVariant)} question...`}
-                  className="resize-none"
+                  className='resize-none'
                   rows={3}
                   maxLength={2000}
                   disabled={isLoading}
                 />
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-500">
-                    {input.length}/2000
-                  </span>
-                  <div className="text-xs text-gray-500">
+                <div className='flex justify-between items-center mt-2'>
+                  <span className='text-xs text-gray-500'>{input.length}/2000</span>
+                  <div className='text-xs text-gray-500'>
                     Press Enter to send, Shift+Enter for new line
                   </div>
                 </div>
               </div>
               <Button
-                type="submit"
+                type='submit'
                 disabled={!input.trim() || isLoading}
-                className="px-6 py-3 self-end"
+                className='px-6 py-3 self-end'
               >
-                <Send className="h-4 w-4" />
+                <Send className='h-4 w-4' />
               </Button>
             </form>
           </div>

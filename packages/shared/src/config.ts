@@ -18,7 +18,7 @@ const configSchema = z.object({
   // VAM (Verified Answer Mode) Configuration
   VAM_MIN_TRUST: z
     .string()
-    .transform((val) => parseFloat(val))
+    .transform(val => parseFloat(val))
     .pipe(z.number().min(0).max(1))
     .default('0.92'),
 
@@ -37,26 +37,25 @@ const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z
     .string()
-    .transform((val) => parseInt(val, 10))
+    .transform(val => parseInt(val, 10))
     .pipe(z.number().int().min(1).max(65535))
     .default('3000'),
   API_PORT: z
     .string()
-    .transform((val) => parseInt(val, 10))
+    .transform(val => parseInt(val, 10))
     .pipe(z.number().int().min(1).max(65535))
     .default('3001'),
+  WEB_URL: z.string().url('WEB_URL must be a valid URL').default('http://localhost:3000'),
 
   // CORS Configuration
   CORS_ORIGINS: z
     .string()
-    .transform((val) => val.split(',').map((origin) => origin.trim()))
+    .transform(val => val.split(',').map(origin => origin.trim()))
     .pipe(z.array(z.string().url()))
     .default('http://localhost:3000,http://localhost:3001'),
 
   // Logging Configuration
-  LOG_LEVEL: z
-    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
-    .default('info'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
 /**
@@ -74,9 +73,7 @@ export function getConfig(): Config {
     return configSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(
-        (err) => `${err.path.join('.')}: ${err.message}`,
-      );
+      const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
       throw new Error(`Configuration validation failed:\n${errorMessages.join('\n')}`);
     }
     throw error;

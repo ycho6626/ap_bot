@@ -49,7 +49,7 @@ function redactSensitiveData(obj: unknown): unknown {
 
   for (const [key, value] of Object.entries(redacted)) {
     // Check if key matches any redaction pattern
-    const shouldRedact = redactionPatterns.some((pattern) => pattern.test(key));
+    const shouldRedact = redactionPatterns.some(pattern => pattern.test(key));
 
     if (shouldRedact) {
       if (typeof value === 'string') {
@@ -77,10 +77,10 @@ function createBaseLogger() {
   return pino({
     level: config().LOG_LEVEL,
     formatters: {
-      level: (label) => ({ level: label }),
+      level: label => ({ level: label }),
     },
     serializers: {
-      req: (req) => {
+      req: req => {
         if (!req) return req;
         return {
           method: req.method,
@@ -90,27 +90,29 @@ function createBaseLogger() {
           remotePort: req.remotePort,
         };
       },
-      res: (res) => {
+      res: res => {
         if (!res) return res;
         return {
           statusCode: res.statusCode,
           headers: redactSensitiveData(res.headers),
         };
       },
-      err: (err) => {
+      err: err => {
         if (!err) return err;
         return {
           type: err.constructor.name,
           message: err.message,
           stack: err.stack,
-          ...(typeof err === 'object' && err !== null ? redactSensitiveData(err) as Record<string, unknown> : {}),
+          ...(typeof err === 'object' && err !== null
+            ? (redactSensitiveData(err) as Record<string, unknown>)
+            : {}),
         };
       },
     },
     hooks: {
       logMethod(inputArgs, method) {
         // Redact sensitive data in log arguments
-        const redactedArgs = inputArgs.map((arg) => redactSensitiveData(arg));
+        const redactedArgs = inputArgs.map(arg => redactSensitiveData(arg));
         return method.apply(this, redactedArgs as [string, ...any[]]);
       },
     },
@@ -123,6 +125,12 @@ function createBaseLogger() {
 const baseLogger = createBaseLogger();
 
 /**
+ * Default logger instance (alias for base logger)
+ * @deprecated Use createLogger() or getLogger() explicitly
+ */
+export const logger = baseLogger;
+
+/**
  * Create a child logger for a specific module
  * @param module - Module name
  * @param context - Additional context to include in logs
@@ -131,7 +139,9 @@ const baseLogger = createBaseLogger();
 export function createLogger(module: string, context: Record<string, unknown> = {}): pino.Logger {
   return baseLogger.child({
     module,
-    ...(typeof context === 'object' && context !== null ? redactSensitiveData(context) as Record<string, unknown> : {}),
+    ...(typeof context === 'object' && context !== null
+      ? (redactSensitiveData(context) as Record<string, unknown>)
+      : {}),
   });
 }
 
@@ -155,7 +165,7 @@ export const LogLevel = {
   TRACE: 'trace',
 } as const;
 
-export type LogLevel = typeof LogLevel[keyof typeof LogLevel];
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 
 /**
  * Structured logging helpers
@@ -218,7 +228,7 @@ export class PerformanceTimer {
         duration,
         ...context,
       },
-      `Operation completed in ${duration}ms`,
+      `Operation completed in ${duration}ms`
     );
   }
 }

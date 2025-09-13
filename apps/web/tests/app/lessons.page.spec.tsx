@@ -42,28 +42,28 @@ vi.mock('react-hot-toast', () => ({
 
 // Mock the Math component
 vi.mock('../../src/components/katex/Math', () => ({
-  Math: ({ content }: { content: string }) => <span data-testid="math-content">{content}</span>,
+  Math: ({ content }: { content: string }) => <span data-testid='math-content'>{content}</span>,
 }));
 
 // Mock the ExamVariantSelector component
 vi.mock('../../src/components/ExamVariantSelector', () => ({
-  ExamVariantSelector: ({ 
-    value, 
-    onChange 
-  }: { 
-    value: 'calc_ab' | 'calc_bc', 
-    onChange: (value: 'calc_ab' | 'calc_bc') => void 
+  ExamVariantSelector: ({
+    value,
+    onChange,
+  }: {
+    value: 'calc_ab' | 'calc_bc';
+    onChange: (value: 'calc_ab' | 'calc_bc') => void;
   }) => (
-    <div data-testid="exam-variant-selector">
-      <button 
-        data-testid="variant-ab" 
+    <div data-testid='exam-variant-selector'>
+      <button
+        data-testid='variant-ab'
         onClick={() => onChange('calc_ab')}
         className={value === 'calc_ab' ? 'selected' : ''}
       >
         AB
       </button>
-      <button 
-        data-testid="variant-bc" 
+      <button
+        data-testid='variant-bc'
         onClick={() => onChange('calc_bc')}
         className={value === 'calc_bc' ? 'selected' : ''}
       >
@@ -139,7 +139,7 @@ describe('LessonsPage - AB/BC Variant Persistence', () => {
             topic: 'derivatives',
             subtopic: 'power_rule',
           },
-        }
+        },
       ],
       metadata: {
         query: 'derivatives',
@@ -170,9 +170,9 @@ describe('LessonsPage - AB/BC Variant Persistence', () => {
   it('should persist variant selection across page reloads', async () => {
     // Simulate page reload by re-rendering with different storage value
     mockExamVariantStorage.get.mockReturnValue('calc_bc');
-    
+
     const { rerender } = render(<LessonsPage />);
-    
+
     // Simulate page reload - storage returns BC variant
     mockExamVariantStorage.get.mockReturnValue('calc_bc');
     rerender(<LessonsPage />);

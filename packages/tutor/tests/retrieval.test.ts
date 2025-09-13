@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HybridRetrieval } from '../src/retrieval/hybrid';
-import { 
-  expandQuery, 
-  createSearchTerms, 
+import {
+  expandQuery,
+  createSearchTerms,
   boostTermsByVariant,
   extractMathExpressions,
-  normalizeMathNotation 
+  normalizeMathNotation,
 } from '../src/retrieval/query';
 import { supabaseService } from '@ap/shared';
 
@@ -19,10 +19,12 @@ vi.mock('@ap/shared', () => ({
             or: vi.fn(() => ({
               in: vi.fn(() => ({
                 not: vi.fn(() => ({
-                  limit: vi.fn(() => Promise.resolve({
-                    data: [],
-                    error: null,
-                  })),
+                  limit: vi.fn(() =>
+                    Promise.resolve({
+                      data: [],
+                      error: null,
+                    })
+                  ),
                 })),
               })),
             })),
@@ -45,7 +47,7 @@ describe('HybridRetrieval', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create a simple mock query builder that returns itself for chaining
     const mockQuery = {
       select: vi.fn().mockReturnThis(),
@@ -55,15 +57,15 @@ describe('HybridRetrieval', () => {
       in: vi.fn().mockReturnThis(),
       not: vi.fn().mockReturnThis(),
       textSearch: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null })
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
     };
-    
+
     // Make the queryBuilder itself awaitable
     Object.setPrototypeOf(mockQuery, Promise.prototype);
     mockQuery.then = vi.fn().mockResolvedValue({ data: [], error: null });
-    
+
     (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
-    
+
     retrieval = new HybridRetrieval();
   });
 
@@ -92,13 +94,13 @@ describe('HybridRetrieval', () => {
         in: vi.fn().mockReturnThis(),
         not: vi.fn().mockReturnThis(),
         textSearch: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
-      
+
       // Make the queryBuilder itself awaitable
       Object.setPrototypeOf(mockQuery, Promise.prototype);
       mockQuery.then = vi.fn().mockResolvedValue({ data: mockData, error: null });
-      
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
       const results = await retrieval.search('What is a derivative?', {
@@ -121,35 +123,41 @@ describe('HybridRetrieval', () => {
         in: vi.fn().mockReturnThis(),
         not: vi.fn().mockReturnThis(),
         textSearch: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
-      
+
       // Make the queryBuilder itself awaitable
       Object.setPrototypeOf(mockQuery, Promise.prototype);
-      mockQuery.then = vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } });
-      
+      mockQuery.then = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'Database error' } });
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
-      await expect(retrieval.search('test query')).rejects.toThrow('Textual search failed: Database error');
+      await expect(retrieval.search('test query')).rejects.toThrow(
+        'Textual search failed: Database error'
+      );
     });
   });
 
   describe('extractSnippet', () => {
     it('should extract relevant snippet', () => {
-      const content = 'This is a long document about derivatives. Derivatives are rates of change. They measure how fast a function changes.';
+      const content =
+        'This is a long document about derivatives. Derivatives are rates of change. They measure how fast a function changes.';
       const query = 'derivatives rate of change';
-      
+
       const snippet = (retrieval as any).extractSnippet(content, query);
-      
+
       expect(snippet).toContain('Derivatives are rates of change');
     });
 
     it('should fallback to first sentences if no matches', () => {
-      const content = 'This is a document about integrals. It explains how to calculate areas under curves.';
+      const content =
+        'This is a document about integrals. It explains how to calculate areas under curves.';
       const query = 'derivatives';
-      
+
       const snippet = (retrieval as any).extractSnippet(content, query);
-      
+
       expect(snippet).toContain('This is a document about integrals');
     });
   });
@@ -255,11 +263,11 @@ describe('Query Expansion', () => {
     it('should boost variant-specific terms', () => {
       const terms = ['derivative', 'series', 'polar'];
       const boosted = boostTermsByVariant(terms, 'calc_bc');
-      
+
       const derivativeBoost = boosted.find(t => t.term === 'derivative');
       const seriesBoost = boosted.find(t => t.term === 'series');
       const polarBoost = boosted.find(t => t.term === 'polar');
-      
+
       expect(derivativeBoost?.boost).toBe(1.3); // Core calculus term
       expect(seriesBoost?.boost).toBe(1.4); // BC-specific term
       expect(polarBoost?.boost).toBe(1.4); // BC-specific term
@@ -269,10 +277,10 @@ describe('Query Expansion', () => {
       const terms = ['series', 'polar', 'parametric'];
       const abBoosted = boostTermsByVariant(terms, 'calc_ab');
       const bcBoosted = boostTermsByVariant(terms, 'calc_bc');
-      
+
       const abSeries = abBoosted.find(t => t.term === 'series');
       const bcSeries = bcBoosted.find(t => t.term === 'series');
-      
+
       expect(abSeries?.boost).toBe(1.0); // No special boost for AB
       expect(bcSeries?.boost).toBe(1.4); // Special boost for BC
     });

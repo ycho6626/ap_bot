@@ -44,7 +44,7 @@ describe('API Gateway Plugins', () => {
 
     it('should add security headers', async () => {
       await fastify.register(securityPlugin);
-      
+
       fastify.get('/test', async (request: any, reply: any) => {
         return { message: 'test' };
       });
@@ -103,7 +103,7 @@ describe('API Gateway Plugins', () => {
 
     it('should preserve raw body for JSON requests', async () => {
       await fastify.register(rawBodyPlugin);
-      
+
       fastify.post('/test', async (request: any, reply: any) => {
         const rawBody = request.getRawBody();
         return {
@@ -131,7 +131,7 @@ describe('API Gateway Plugins', () => {
 
     it('should preserve raw body for text requests', async () => {
       await fastify.register(rawBodyPlugin);
-      
+
       fastify.post('/test', async (request: any, reply: any) => {
         const rawBody = request.getRawBody();
         return {
@@ -159,7 +159,7 @@ describe('API Gateway Plugins', () => {
 
     it('should handle malformed JSON gracefully', async () => {
       await fastify.register(rawBodyPlugin);
-      
+
       fastify.post('/test', async (request: any, reply: any) => {
         return { message: 'success' };
       });
@@ -187,7 +187,7 @@ describe('API Gateway Plugins', () => {
 
     it('should apply rate limiting', async () => {
       await fastify.register(rateLimitPlugin);
-      
+
       fastify.get('/test', async (request: any, reply: any) => {
         return { message: 'test' };
       });
@@ -214,7 +214,7 @@ describe('API Gateway Plugins', () => {
       await fastify.register(securityPlugin);
       await fastify.register(rawBodyPlugin);
       await fastify.register(rateLimitPlugin);
-      
+
       fastify.get('/test', async (request: any, reply: any) => {
         return { message: 'test' };
       });

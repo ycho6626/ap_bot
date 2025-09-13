@@ -230,15 +230,15 @@ export const chatHistoryStorage = {
   /**
    * Get chat history for a session
    */
-  get: (sessionId: string): any[] => {
+  get: (sessionId: string): unknown[] => {
     const key = `${STORAGE_KEYS.CHAT_HISTORY}_${sessionId}`;
-    return storage.get<any[]>(key, []);
+    return storage.get<unknown[]>(key, []);
   },
 
   /**
    * Save chat history for a session
    */
-  set: (sessionId: string, messages: any[]): void => {
+  set: (sessionId: string, messages: unknown[]): void => {
     const key = `${STORAGE_KEYS.CHAT_HISTORY}_${sessionId}`;
     storage.set(key, messages);
   },

@@ -71,16 +71,18 @@ export class VAMCoach {
   private config: VAMConfig;
   private answerCache = new Map<string, CoachResponse>();
 
-  constructor(config: VAMConfig = {
-    minTrustThreshold: 0.92,
-    maxRetries: 1,
-    enableCanonicalFirst: true,
-    enableRetrieval: true,
-    enableVerification: true,
-    enablePostprocessing: true,
-    cacheVerifiedOnly: true,
-    suggestionsCount: 3,
-  }) {
+  constructor(
+    config: VAMConfig = {
+      minTrustThreshold: 0.92,
+      maxRetries: 1,
+      enableCanonicalFirst: true,
+      enableRetrieval: true,
+      enableVerification: true,
+      enablePostprocessing: true,
+      cacheVerifiedOnly: true,
+      suggestionsCount: 3,
+    }
+  ) {
     this.config = config;
   }
 
@@ -90,16 +92,13 @@ export class VAMCoach {
    * @param context - Coach context
    * @returns Coach response
    */
-  async processQuestion(
-    question: string,
-    context: CoachContext,
-  ): Promise<CoachResponse> {
+  async processQuestion(question: string, context: CoachContext): Promise<CoachResponse> {
     const startTime = Date.now();
     const { examVariant } = context;
 
     this.logger.debug(
       { question, examVariant, sessionId: context.sessionId },
-      'Processing student question',
+      'Processing student question'
     );
 
     try {
@@ -142,20 +141,16 @@ export class VAMCoach {
 
       this.cacheResponse(cacheKey, response!);
       return response!;
-
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Failed to process question',
+        'Failed to process question'
       );
 
       return this.createErrorResponse(context);
     } finally {
       const processingTime = Date.now() - startTime;
-      this.logger.debug(
-        { processingTime, question },
-        'Question processing completed',
-      );
+      this.logger.debug({ processingTime, question }, 'Question processing completed');
     }
   }
 
@@ -165,10 +160,7 @@ export class VAMCoach {
    * @param context - Coach context
    * @returns Coach response
    */
-  private async tryCanonicalFirst(
-    question: string,
-    context: CoachContext,
-  ): Promise<CoachResponse> {
+  private async tryCanonicalFirst(question: string, context: CoachContext): Promise<CoachResponse> {
     this.logger.debug({ question }, 'Trying canonical-first approach');
 
     try {
@@ -176,11 +168,11 @@ export class VAMCoach {
       const searchOptions: CanonicalSearchOptions = {
         examVariant: context.examVariant,
       };
-      
+
       if (context.topic) searchOptions.topic = context.topic;
       if (context.subtopic) searchOptions.subtopic = context.subtopic;
       if (context.difficulty) searchOptions.difficulty = context.difficulty;
-      
+
       const canonical = await canonicalManager.findBestCanonical(question, searchOptions);
 
       if (!canonical) {
@@ -215,13 +207,15 @@ export class VAMCoach {
         verified: true,
         trustScore,
         confidence: verification?.overallConfidence || 0.95,
-        sources: [{
-          type: 'canonical',
-          id: canonical.solution.id,
-          title: canonical.solution.question_template,
-          snippet: canonical.solution.final_answer.substring(0, 200),
-          score: canonical.score,
-        }],
+        sources: [
+          {
+            type: 'canonical',
+            id: canonical.solution.id,
+            title: canonical.solution.question_template,
+            snippet: canonical.solution.final_answer.substring(0, 200),
+            score: canonical.score,
+          },
+        ],
         suggestions: [],
         metadata: {
           examVariant: context.examVariant,
@@ -232,11 +226,10 @@ export class VAMCoach {
           retryCount: 0,
         },
       };
-
     } catch (error) {
       this.logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
-        'Canonical-first approach failed',
+        'Canonical-first approach failed'
       );
       throw error;
     }
@@ -250,7 +243,7 @@ export class VAMCoach {
    */
   private async tryRetrievalGeneration(
     question: string,
-    context: CoachContext,
+    context: CoachContext
   ): Promise<CoachResponse> {
     this.logger.debug({ question }, 'Trying retrieval + generation approach');
 
@@ -323,11 +316,10 @@ export class VAMCoach {
           retryCount: 0,
         },
       };
-
     } catch (error) {
       this.logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
-        'Retrieval + generation approach failed',
+        'Retrieval + generation approach failed'
       );
       throw error;
     }
@@ -343,24 +335,25 @@ export class VAMCoach {
   private async tryCorrectiveDecode(
     question: string,
     context: CoachContext,
-    previousResponse: CoachResponse,
+    previousResponse: CoachResponse
   ): Promise<CoachResponse> {
     this.logger.debug({ question }, 'Trying corrective decode');
 
     try {
       const systemMessage = llmUtils.createSystemMessage(context.examVariant);
-      const userMessage = llmUtils.createUserMessage(question, `
+      const userMessage = llmUtils.createUserMessage(
+        question,
+        `
 Previous attempt had low confidence. Please provide a more accurate and detailed solution.
 
 Previous answer: ${previousResponse.answer}
 Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
-      `);
+      `
+      );
 
       const llmResponse = await llmClient.complete({
         system: systemMessage,
-        messages: [
-          { role: 'user', content: userMessage },
-        ],
+        messages: [{ role: 'user', content: userMessage }],
         maxTokens: 2000,
         temperature: 0.05, // Lower temperature for more focused response
       });
@@ -391,12 +384,14 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
         verified: verification?.ok || false,
         trustScore,
         confidence: verification?.overallConfidence || 0.5,
-        sources: [{
-          type: 'generated',
-          id: 'corrective-decode',
-          title: 'Corrected Answer',
-          snippet: answer.substring(0, 200),
-        }],
+        sources: [
+          {
+            type: 'generated',
+            id: 'corrective-decode',
+            title: 'Corrected Answer',
+            snippet: answer.substring(0, 200),
+          },
+        ],
         suggestions: [],
         metadata: {
           examVariant: context.examVariant,
@@ -407,11 +402,10 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
           retryCount: 1,
         },
       };
-
     } catch (error) {
       this.logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
-        'Corrective decode failed',
+        'Corrective decode failed'
       );
       throw error;
     }
@@ -425,7 +419,7 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    */
   private async abstainWithSuggestions(
     question: string,
-    context: CoachContext,
+    context: CoachContext
   ): Promise<CoachResponse> {
     this.logger.debug({ question }, 'Abstaining with suggestions');
 
@@ -437,8 +431,8 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
         minScore: 0.2,
       });
 
-      const suggestions = searchResults.map(result => 
-        `Check out: ${result.document.topic || 'Document'} - ${result.snippet}`
+      const suggestions = searchResults.map(
+        result => `Check out: ${result.document.topic || 'Document'} - ${result.snippet}`
       );
 
       // Add generic suggestions if needed
@@ -449,8 +443,10 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
           'Ask your teacher for clarification',
           'Use online resources like Khan Academy',
         ];
-        
-        suggestions.push(...genericSuggestions.slice(0, this.config.suggestionsCount - suggestions.length));
+
+        suggestions.push(
+          ...genericSuggestions.slice(0, this.config.suggestionsCount - suggestions.length)
+        );
       }
 
       return {
@@ -475,15 +471,15 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
           retryCount: 0,
         },
       };
-
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Failed to generate suggestions',
+        'Failed to generate suggestions'
       );
 
       return {
-        answer: 'I apologize, but I cannot provide a reliable answer to your question at this time.',
+        answer:
+          'I apologize, but I cannot provide a reliable answer to your question at this time.',
         verified: false,
         trustScore: 0,
         confidence: 0,
@@ -513,8 +509,8 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    */
   private formatCanonicalAnswer(steps: any[]): string {
     let answer = `Here's a step-by-step solution:\n\n`;
-    
-    steps.forEach((step) => {
+
+    steps.forEach(step => {
       answer += `**Step ${step.step}**: ${step.description}\n`;
       answer += `${step.work}\n`;
       if (step.justification) {
@@ -536,7 +532,7 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    */
   private formatRetrievalContext(searchResults: SearchResult[]): string {
     let context = `Here are some relevant resources:\n\n`;
-    
+
     searchResults.forEach((result, index) => {
       context += `${index + 1}. **${result.document.topic || 'Document'}**\n`;
       context += `${result.snippet}\n\n`;
@@ -552,7 +548,7 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    */
   private formatContext(context: CoachContext): string {
     let formatted = '';
-    
+
     if (context.topic) {
       formatted += `Topic: ${context.topic}\n`;
     }
@@ -576,11 +572,10 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    * @param error - Error that occurred
    * @returns Error response
    */
-  private createErrorResponse(
-    context: CoachContext,
-  ): CoachResponse {
+  private createErrorResponse(context: CoachContext): CoachResponse {
     return {
-      answer: 'I apologize, but I encountered an error while processing your question. Please try again.',
+      answer:
+        'I apologize, but I encountered an error while processing your question. Please try again.',
       verified: false,
       trustScore: 0,
       confidence: 0,
@@ -623,14 +618,14 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
     }
 
     this.answerCache.set(key, response);
-    
-      // Simple LRU: remove oldest entries if cache is too large
-      if (this.answerCache.size > 100) {
-        const firstKey = this.answerCache.keys().next().value;
-        if (firstKey) {
-          this.answerCache.delete(firstKey);
-        }
+
+    // Simple LRU: remove oldest entries if cache is too large
+    if (this.answerCache.size > 100) {
+      const firstKey = this.answerCache.keys().next().value;
+      if (firstKey) {
+        this.answerCache.delete(firstKey);
       }
+    }
   }
 }
 

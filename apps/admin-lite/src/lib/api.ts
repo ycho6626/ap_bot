@@ -2,7 +2,7 @@ import ky from 'ky';
 import type { ExamVariant, ReviewCaseStatus } from '@ap/shared/types';
 
 const api = ky.create({
-  prefixUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  prefixUrl: process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001',
   timeout: 30000,
   retry: {
     limit: 3,
@@ -10,7 +10,7 @@ const api = ky.create({
   },
   hooks: {
     beforeRequest: [
-      (request) => {
+      request => {
         // Add JWT token to Authorization header if available
         const token = localStorage.getItem('admin_jwt_token');
         if (token) {
@@ -82,14 +82,16 @@ export class ReviewApi {
   /**
    * Get review cases with optional filtering
    */
-  static async getCases(params: {
-    status?: ReviewCaseStatus;
-    examVariant?: ExamVariant;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<ReviewCasesResponse> {
+  static async getCases(
+    params: {
+      status?: ReviewCaseStatus;
+      examVariant?: ExamVariant;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<ReviewCasesResponse> {
     const searchParams = new URLSearchParams();
-    
+
     if (params.status) searchParams.set('status', params.status);
     if (params.examVariant) searchParams.set('examVariant', params.examVariant);
     if (params.limit) searchParams.set('limit', params.limit.toString());
@@ -107,14 +109,16 @@ export class ReviewApi {
     status: string;
     message: string;
   }> {
-    const response = await api.post('review/resolve', {
-      json: action,
-    }).json<{
-      id: string;
-      status: string;
-      message: string;
-    }>();
-    
+    const response = await api
+      .post('review/resolve', {
+        json: action,
+      })
+      .json<{
+        id: string;
+        status: string;
+        message: string;
+      }>();
+
     return response;
   }
 
@@ -147,14 +151,16 @@ export class ReviewApi {
     status: string;
     message: string;
   }> {
-    const response = await api.post('review', {
-      json: caseData,
-    }).json<{
-      id: string;
-      status: string;
-      message: string;
-    }>();
-    
+    const response = await api
+      .post('review', {
+        json: caseData,
+      })
+      .json<{
+        id: string;
+        status: string;
+        message: string;
+      }>();
+
     return response;
   }
 }

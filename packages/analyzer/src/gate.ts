@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
 import { z } from 'zod';
-import { supabase } from '@ap/shared';
 import { logger } from '@ap/shared';
 import { analyzeVAM, VAMAnalysis } from './vam.js';
 
@@ -12,20 +11,22 @@ const QUALITY_GATES = {
   max_avg_response_time_ms: 5000,
   max_error_rate: 0.01,
   min_trust_score: 0.92,
-} as const;
+};
 
 // Schema for gate configuration
 const GateConfigSchema = z.object({
   environment: z.enum(['staging', 'production']),
   time_window_hours: z.number().positive().default(24),
   exam_variant: z.enum(['calc_ab', 'calc_bc']).optional(),
-  custom_thresholds: z.object({
-    min_verified_share: z.number().min(0).max(1).optional(),
-    min_verifier_equiv: z.number().min(0).max(1).optional(),
-    max_avg_response_time_ms: z.number().positive().optional(),
-    max_error_rate: z.number().min(0).max(1).optional(),
-    min_trust_score: z.number().min(0).max(1).optional(),
-  }).optional(),
+  custom_thresholds: z
+    .object({
+      min_verified_share: z.number().min(0).max(1).optional(),
+      min_verifier_equiv: z.number().min(0).max(1).optional(),
+      max_avg_response_time_ms: z.number().positive().optional(),
+      max_error_rate: z.number().min(0).max(1).optional(),
+      min_trust_score: z.number().min(0).max(1).optional(),
+    })
+    .optional(),
 });
 
 type GateConfig = z.infer<typeof GateConfigSchema>;
@@ -73,7 +74,8 @@ function applyCustomThresholds(
   return {
     min_verified_share: customThresholds.min_verified_share ?? defaultGates.min_verified_share,
     min_verifier_equiv: customThresholds.min_verifier_equiv ?? defaultGates.min_verifier_equiv,
-    max_avg_response_time_ms: customThresholds.max_avg_response_time_ms ?? defaultGates.max_avg_response_time_ms,
+    max_avg_response_time_ms:
+      customThresholds.max_avg_response_time_ms ?? defaultGates.max_avg_response_time_ms,
     max_error_rate: customThresholds.max_error_rate ?? defaultGates.max_error_rate,
     min_trust_score: customThresholds.min_trust_score ?? defaultGates.min_trust_score,
   };
@@ -163,15 +165,12 @@ function checkQualityGates(
 /**
  * Generates a summary of gate results
  */
-function generateSummary(
-  result: GateResult,
-  analysis: VAMAnalysis
-): string {
+function generateSummary(result: GateResult, analysis: VAMAnalysis): string {
   const { passed, failures, warnings, metrics } = result;
   const { by_variant, trends } = analysis;
 
   let summary = `Quality Gate ${passed ? '✅ PASSED' : '❌ FAILED'}\n\n`;
-  
+
   summary += `Environment: ${result.environment}\n`;
   summary += `Time Window: ${result.time_window_hours} hours\n`;
   summary += `Total Requests: ${analysis.overall.total_requests}\n\n`;
@@ -200,13 +199,13 @@ function generateSummary(
 
   if (failures.length > 0) {
     summary += `❌ Failures:\n`;
-    failures.forEach(failure => summary += `- ${failure}\n`);
+    failures.forEach(failure => (summary += `- ${failure}\n`));
     summary += `\n`;
   }
 
   if (warnings.length > 0) {
     summary += `⚠️  Warnings:\n`;
-    warnings.forEach(warning => summary += `- ${warning}\n`);
+    warnings.forEach(warning => (summary += `- ${warning}\n`));
     summary += `\n`;
   }
 
@@ -267,7 +266,9 @@ export async function runQualityGates(config: unknown): Promise<GateResult> {
 /**
  * Runs quality gates with default configuration
  */
-export async function runDefaultQualityGates(environment: 'staging' | 'production' = 'production'): Promise<GateResult> {
+export async function runDefaultQualityGates(
+  environment: 'staging' | 'production' = 'production'
+): Promise<GateResult> {
   return runQualityGates({
     environment,
     time_window_hours: 24,

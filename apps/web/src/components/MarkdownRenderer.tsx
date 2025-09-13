@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Math, InlineMath, DisplayMath } from './katex/Math';
 import { cn } from '@/lib/utils';
@@ -11,47 +11,58 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
+// Helper to safely join children and get a string
+const joinChildren = (children: React.ReactNode): string => {
+  const result = React.Children.toArray(children).join('');
+  return result || '';
+};
+
 // Custom components for react-markdown
-const components = {
+const components: Components = {
   // Handle inline math with $...$ syntax
-  p: ({ children, ...props }: any) => {
+  p: ({ children, ...props }) => {
     // Check if the paragraph contains only math
-    const text = React.Children.toArray(children).join('');
-    if (text.match(/^\$.*\$$/)) {
+    const text = joinChildren(children);
+    if (text?.match(/^\$.*\$$/)) {
+      // @ts-expect-error - text is guaranteed to be a string after the checks above
       return <Math content={text} displayMode={false} {...props} />;
     }
     return <p {...props}>{children}</p>;
   },
-  
+
   // Handle code blocks that might contain math
-  code: ({ inline, children, ...props }: any) => {
-    const code = React.Children.toArray(children).join('');
-    
+  code: ({ children, ...props }) => {
+    const code = joinChildren(children);
+    const inline = (props as { inline?: boolean }).inline;
+
     if (inline) {
       // Check if it's inline math
-      if (code.match(/^\$.*\$$/)) {
+      if (code?.match(/^\$.*\$$/)) {
+        // @ts-expect-error - code is guaranteed to be a string after the checks above
         return <InlineMath content={code} {...props} />;
       }
       return <code {...props}>{children}</code>;
     }
-    
+
     // Check if it's a math block (starts with $$ or contains LaTeX)
-    if (code.match(/^\$\$/) || code.match(/\\begin\{/)) {
+    if (code && (code.match(/^\$\$/) ?? code.match(/\\begin\{/))) {
+      // @ts-expect-error - code is guaranteed to be a string after the checks above
       return <DisplayMath content={code} {...props} />;
     }
-    
+
     return <code {...props}>{children}</code>;
   },
-  
+
   // Handle pre blocks that might contain math
-  pre: ({ children, ...props }: any) => {
-    const text = React.Children.toArray(children).join('');
-    
+  pre: ({ children, ...props }) => {
+    const text = joinChildren(children);
+
     // Check if it's a math block
-    if (text.match(/^\$\$/) || text.match(/\\begin\{/)) {
+    if (text && (text.match(/^\$\$/) ?? text.match(/\\begin\{/))) {
+      // @ts-expect-error - text is guaranteed to be a string after the checks above
       return <DisplayMath content={text} {...props} />;
     }
-    
+
     return <pre {...props}>{children}</pre>;
   },
 };
@@ -59,10 +70,7 @@ const components = {
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   return (
     <div className={cn('prose prose-sm max-w-none', className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={components}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
     </div>
@@ -77,20 +85,17 @@ export function MathMarkdownRenderer({ content, className }: MarkdownRendererPro
   // Process content to handle math expressions
   const processedContent = content
     // Handle inline math $...$
-    .replace(/\$([^$]+)\$/g, (match, math) => {
+    .replace(/\$([^$]+)\$/g, (match, _math) => {
       return `\`${match}\``;
     })
     // Handle display math $$...$$
-    .replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+    .replace(/\$\$([^$]+)\$\$/g, (match, _math) => {
       return `\`\`\`\n${match}\n\`\`\``;
     });
 
   return (
     <div className={cn('prose prose-sm max-w-none', className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={components}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {processedContent}
       </ReactMarkdown>
     </div>

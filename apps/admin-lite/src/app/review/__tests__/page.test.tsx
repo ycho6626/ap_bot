@@ -34,7 +34,7 @@ Object.defineProperty(window, 'localStorage', {
 // Mock the components
 vi.mock('@/components/ReviewCaseList', () => ({
   ReviewCaseList: ({ cases, loading, onCaseSelect }: any) => (
-    <div data-testid="review-case-list">
+    <div data-testid='review-case-list'>
       {loading ? 'Loading...' : `Found ${cases.length} cases`}
       {cases.map((case_: any) => (
         <div key={case_.id} onClick={() => onCaseSelect(case_)}>
@@ -47,7 +47,7 @@ vi.mock('@/components/ReviewCaseList', () => ({
 
 vi.mock('@/components/ReviewCaseDetail', () => ({
   ReviewCaseDetail: ({ case_, onResolve }: any) => (
-    <div data-testid="review-case-detail">
+    <div data-testid='review-case-detail'>
       <div>{case_.question}</div>
       <button onClick={() => onResolve(case_.id, 'approve')}>Approve</button>
       <button onClick={() => onResolve(case_.id, 'reject')}>Reject</button>
@@ -57,13 +57,10 @@ vi.mock('@/components/ReviewCaseDetail', () => ({
 
 vi.mock('@/components/ReviewFilters', () => ({
   ReviewFilters: ({ filters, onFiltersChange }: any) => (
-    <div data-testid="review-filters">
-      <select 
-        value={filters.status} 
-        onChange={(e) => onFiltersChange({ status: e.target.value })}
-      >
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
+    <div data-testid='review-filters'>
+      <select value={filters.status} onChange={e => onFiltersChange({ status: e.target.value })}>
+        <option value='pending'>Pending</option>
+        <option value='approved'>Approved</option>
       </select>
     </div>
   ),
@@ -109,7 +106,7 @@ describe('ReviewPage', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // Mock successful API responses
     const { ReviewApi } = await import('@/lib/api');
     vi.mocked(ReviewApi.getCases).mockResolvedValue({

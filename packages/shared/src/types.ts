@@ -25,7 +25,7 @@ export type ReviewCaseStatus = 'new' | 'in_progress' | 'resolved' | 'canonicaliz
 /**
  * Analytics event kinds
  */
-export type AnalyticsEventKind = 
+export type AnalyticsEventKind =
   | 'vam_answer_verified'
   | 'vam_answer_abstained'
   | 'retrieval_performed'

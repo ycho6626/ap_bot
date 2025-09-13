@@ -8,7 +8,10 @@ import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from 'lucide-react';
 
 const resolveFormSchema = z.object({
   feedback: z.string().max(1000, 'Feedback must be less than 1000 characters').optional(),
-  correctedAnswer: z.string().max(10000, 'Corrected answer must be less than 10000 characters').optional(),
+  correctedAnswer: z
+    .string()
+    .max(10000, 'Corrected answer must be less than 10000 characters')
+    .optional(),
   tags: z.string().optional(),
 });
 
@@ -16,11 +19,7 @@ type ResolveFormData = z.infer<typeof resolveFormSchema>;
 
 interface ResolveFormProps {
   action: 'approve' | 'reject' | 'request_revision';
-  onSubmit: (data: {
-    feedback?: string;
-    correctedAnswer?: string;
-    tags?: string[];
-  }) => void;
+  onSubmit: (data: { feedback?: string; correctedAnswer?: string; tags?: string[] }) => void;
   onCancel: () => void;
   initialData?: {
     correctedAnswer?: string;
@@ -34,11 +33,10 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
     register,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<ResolveFormData>({
     resolver: zodResolver(resolveFormSchema),
     defaultValues: {
-      correctedAnswer: initialData?.correctedAnswer || '',
+      correctedAnswer: initialData?.correctedAnswer ?? '',
     },
   });
 
@@ -46,7 +44,7 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
     switch (action) {
       case 'approve':
         return {
-          icon: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
+          icon: <CheckCircleIcon className='h-5 w-5 text-green-500' />,
           title: 'Approve Case',
           description: 'Mark this case as approved and ready for use.',
           buttonText: 'Approve',
@@ -56,7 +54,7 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
         };
       case 'reject':
         return {
-          icon: <XCircleIcon className="h-5 w-5 text-red-500" />,
+          icon: <XCircleIcon className='h-5 w-5 text-red-500' />,
           title: 'Reject Case',
           description: 'Mark this case as rejected and not suitable for use.',
           buttonText: 'Reject',
@@ -66,7 +64,7 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
         };
       case 'request_revision':
         return {
-          icon: <AlertCircleIcon className="h-5 w-5 text-orange-500" />,
+          icon: <AlertCircleIcon className='h-5 w-5 text-orange-500' />,
           title: 'Request Revision',
           description: 'Request changes to improve this case.',
           buttonText: 'Request Revision',
@@ -79,7 +77,7 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
 
   const config = getActionConfig();
 
-  const onFormSubmit = async (data: ResolveFormData) => {
+  const onFormSubmit = (data: ResolveFormData) => {
     setIsSubmitting(true);
     try {
       const submitData: {
@@ -110,80 +108,76 @@ export function ResolveForm({ action, onSubmit, onCancel, initialData }: Resolve
   };
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-      <div className="flex items-center space-x-2 mb-4">
+    <form onSubmit={e => void handleSubmit(onFormSubmit)(e)} className='space-y-4'>
+      <div className='flex items-center space-x-2 mb-4'>
         {config.icon}
         <div>
-          <h3 className="text-sm font-medium text-gray-900">{config.title}</h3>
-          <p className="text-xs text-gray-500">{config.description}</p>
+          <h3 className='text-sm font-medium text-gray-900'>{config.title}</h3>
+          <p className='text-xs text-gray-500'>{config.description}</p>
         </div>
       </div>
 
       {/* Feedback */}
       <div>
-        <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 mb-1">
-          Feedback {config.requireFeedback && <span className="text-red-500">*</span>}
+        <label htmlFor='feedback' className='block text-sm font-medium text-gray-700 mb-1'>
+          Feedback {config.requireFeedback && <span className='text-red-500'>*</span>}
         </label>
         <textarea
-          id="feedback"
+          id='feedback'
           {...register('feedback')}
           rows={3}
-          className="textarea w-full"
-          placeholder="Provide feedback about this case..."
+          className='textarea w-full'
+          placeholder='Provide feedback about this case...'
         />
-        {errors.feedback && (
-          <p className="mt-1 text-sm text-red-600">{errors.feedback.message}</p>
-        )}
+        {errors.feedback && <p className='mt-1 text-sm text-red-600'>{errors.feedback.message}</p>}
       </div>
 
       {/* Corrected Answer */}
       {action === 'request_revision' && (
         <div>
-          <label htmlFor="correctedAnswer" className="block text-sm font-medium text-gray-700 mb-1">
-            Corrected Answer <span className="text-red-500">*</span>
+          <label htmlFor='correctedAnswer' className='block text-sm font-medium text-gray-700 mb-1'>
+            Corrected Answer <span className='text-red-500'>*</span>
           </label>
           <textarea
-            id="correctedAnswer"
+            id='correctedAnswer'
             {...register('correctedAnswer')}
             rows={6}
-            className="textarea w-full"
-            placeholder="Provide the corrected answer..."
+            className='textarea w-full'
+            placeholder='Provide the corrected answer...'
           />
           {errors.correctedAnswer && (
-            <p className="mt-1 text-sm text-red-600">{errors.correctedAnswer.message}</p>
+            <p className='mt-1 text-sm text-red-600'>{errors.correctedAnswer.message}</p>
           )}
         </div>
       )}
 
       {/* Tags */}
       <div>
-        <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor='tags' className='block text-sm font-medium text-gray-700 mb-1'>
           Tags
         </label>
         <input
-          id="tags"
+          id='tags'
           {...register('tags')}
-          type="text"
-          className="input w-full"
-          placeholder="Enter tags separated by commas (e.g., derivatives, limits, integration)"
+          type='text'
+          className='input w-full'
+          placeholder='Enter tags separated by commas (e.g., derivatives, limits, integration)'
         />
-        <p className="mt-1 text-xs text-gray-500">
-          Optional tags to categorize this case
-        </p>
+        <p className='mt-1 text-xs text-gray-500'>Optional tags to categorize this case</p>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex space-x-2 pt-4">
+      <div className='flex space-x-2 pt-4'>
         <button
-          type="button"
+          type='button'
           onClick={onCancel}
-          className="btn btn-secondary btn-sm flex-1"
+          className='btn btn-secondary btn-sm flex-1'
           disabled={isSubmitting}
         >
           Cancel
         </button>
         <button
-          type="submit"
+          type='submit'
           className={`btn ${config.buttonClass} btn-sm flex-1`}
           disabled={isSubmitting}
         >

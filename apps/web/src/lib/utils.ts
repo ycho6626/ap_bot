@@ -57,7 +57,7 @@ export function formatTimestamp(timestamp: string | Date): string {
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+  return `${text.slice(0, maxLength)}...`;
 }
 
 /**
@@ -78,14 +78,15 @@ export function containsLatex(text: string): boolean {
  * Extract LaTeX expressions from text
  */
 export function extractLatexExpressions(text: string): string[] {
-  const inlineMatches = text.match(/\$([^$]+)\$/g) || [];
-  const blockMatches = text.match(/\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g) || [];
+  const inlineMatches = text.match(/\$([^$]+)\$/g) ?? [];
+  const blockMatches = text.match(/\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g) ?? [];
   return [...inlineMatches, ...blockMatches];
 }
 
 /**
  * Debounce function for search inputs
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number

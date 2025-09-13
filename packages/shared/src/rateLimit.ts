@@ -27,12 +27,12 @@ class TokenBucket {
    */
   tryConsume(tokens = 1): boolean {
     this.refill();
-    
+
     if (this.tokens >= tokens) {
       this.tokens -= tokens;
       return true;
     }
-    
+
     return false;
   }
 
@@ -51,7 +51,7 @@ class TokenBucket {
   private refill(): void {
     const now = Date.now();
     const timePassed = now - this.lastRefill;
-    
+
     if (timePassed > 0) {
       const tokensToAdd = (timePassed / 1000) * this.refillRate;
       this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd);
@@ -72,7 +72,7 @@ class RedisRateLimiter {
       maxRetriesPerRequest: 3,
     });
 
-    this.redis.on('error', (error) => {
+    this.redis.on('error', error => {
       this.logger.error({ error: error.message }, 'Redis connection error');
     });
   }
@@ -86,36 +86,36 @@ class RedisRateLimiter {
   async isAllowed(key: string, config: RateLimitConfig): Promise<boolean> {
     const now = Date.now();
     const windowStart = now - config.windowMs;
-    
+
     try {
       // Use Redis pipeline for atomic operations
       const pipeline = this.redis.pipeline();
-      
+
       // Remove expired entries
       pipeline.zremrangebyscore(key, 0, windowStart);
-      
+
       // Count current requests
       pipeline.zcard(key);
-      
+
       // Add current request
       pipeline.zadd(key, now, `${now}-${Math.random()}`);
-      
+
       // Set expiration
       pipeline.expire(key, Math.ceil(config.windowMs / 1000));
-      
+
       const results = await pipeline.exec();
-      
+
       if (!results || results.length < 2) {
         throw new Error('Redis pipeline execution failed');
       }
-      
+
       const currentCount = results[1]?.[1] as number;
-      
+
       return currentCount < config.maxRequests;
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Redis rate limit check failed',
+        'Redis rate limit check failed'
       );
       // Fail open - allow request if Redis is down
       return true;
@@ -131,7 +131,7 @@ class RedisRateLimiter {
   async getCurrentCount(key: string, config: RateLimitConfig): Promise<number> {
     const now = Date.now();
     const windowStart = now - config.windowMs;
-    
+
     try {
       await this.redis.zremrangebyscore(key, 0, windowStart);
       const count = await this.redis.zcard(key);
@@ -139,7 +139,7 @@ class RedisRateLimiter {
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Redis rate limit count check failed',
+        'Redis rate limit count check failed'
       );
       return 0;
     }
@@ -192,7 +192,7 @@ class MemoryRateLimiter {
       const refillRate = config.maxRequests / (config.windowMs / 1000);
       this.buckets.set(key, new TokenBucket(config.maxRequests, refillRate, config.windowMs));
     }
-    
+
     return this.buckets.get(key)!;
   }
 
@@ -203,7 +203,7 @@ class MemoryRateLimiter {
     // Simple cleanup - remove buckets that haven't been used recently
     const now = Date.now();
     const maxAge = 5 * 60 * 1000; // 5 minutes
-    
+
     for (const [key, bucket] of this.buckets.entries()) {
       if (now - bucket['lastRefill'] > maxAge) {
         this.buckets.delete(key);
@@ -223,7 +223,7 @@ export class RateLimiter {
 
   constructor() {
     this.memoryLimiter = new MemoryRateLimiter();
-    
+
     // Initialize Redis limiter if URL is provided
     const redisUrl = config().REDIS_URL;
     if (redisUrl) {
@@ -253,7 +253,7 @@ export class RateLimiter {
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Rate limit check failed',
+        'Rate limit check failed'
       );
       // Fail open - allow request if rate limiting fails
       return true;
@@ -276,7 +276,7 @@ export class RateLimiter {
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Rate limit count check failed',
+        'Rate limit count check failed'
       );
       return 0;
     }
@@ -290,11 +290,11 @@ export class RateLimiter {
    */
   async checkRateLimit(key: string, config: RateLimitConfig): Promise<void> {
     const isAllowed = await this.isAllowed(key, config);
-    
+
     if (!isAllowed) {
       const currentCount = await this.getCurrentCount(key, config);
       throw new RateLimitError(
-        `Rate limit exceeded for key: ${key}. Current count: ${currentCount}/${config.maxRequests}`,
+        `Rate limit exceeded for key: ${key}. Current count: ${currentCount}/${config.maxRequests}`
       );
     }
   }
@@ -306,7 +306,7 @@ export class RateLimiter {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    
+
     if (this.redisLimiter) {
       await this.redisLimiter.close();
     }
@@ -326,7 +326,7 @@ export const rateLimiter = new RateLimiter();
  */
 export function createRateLimitMiddleware(
   config: RateLimitConfig,
-  keyGenerator: (req: unknown) => string = () => 'default',
+  keyGenerator: (req: unknown) => string = () => 'default'
 ) {
   return async (req: unknown): Promise<void> => {
     const key = keyGenerator(req);

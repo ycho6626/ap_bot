@@ -16,7 +16,7 @@ export function parseNumeric(value: string | number): number {
 
   // Remove whitespace
   const trimmed = value.trim();
-  
+
   // Handle empty string
   if (trimmed === '') {
     return NaN;
@@ -49,18 +49,18 @@ export function countSigFigs(value: number): number {
 
   // Convert to scientific notation string
   const scientific = value.toExponential();
-  
+
   // Extract the mantissa (part before 'e')
   const parts = scientific.split('e');
   const mantissa = parts[0];
-  
+
   if (!mantissa) {
     return 0;
   }
-  
+
   // Count significant figures by counting all digits in mantissa
   const digits = mantissa.replace('.', '');
-  
+
   // Count all digits (including trailing zeros in scientific notation)
   return digits.length;
 }
@@ -118,10 +118,10 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   // Use half-away-from-zero rounding
   const factor = Math.pow(10, decimalPlaces);
   const scaled = value * factor;
-  
+
   // Apply half-away-from-zero rounding
   const rounded = scaled >= 0 ? Math.floor(scaled + 0.5) : Math.ceil(scaled - 0.5);
-  
+
   return rounded / factor;
 }
 
@@ -132,12 +132,7 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
  * @returns Formatted number string
  */
 export function formatNumber(value: number, options: NumericFormatOptions = {}): string {
-  const {
-    significantFigures,
-    decimalPlaces,
-    unit,
-    scientificNotation = false,
-  } = options;
+  const { significantFigures, decimalPlaces, unit, scientificNotation = false } = options;
 
   if (!isFinite(value)) {
     return value.toString();
@@ -215,7 +210,7 @@ export function approximatelyEqual(a: number, b: number, tolerance = 1e-10): boo
 
   const diff = Math.abs(a - b);
   const max = Math.max(Math.abs(a), Math.abs(b));
-  
+
   // Use relative tolerance for small numbers, absolute tolerance for large numbers
   return diff <= tolerance || (max > 0 && diff <= max * tolerance);
 }
@@ -262,7 +257,7 @@ export function clamp(value: number, min: number, max: number): number {
   if (min > max) {
     [min, max] = [max, min];
   }
-  
+
   return Math.min(Math.max(value, min), max);
 }
 
@@ -276,7 +271,7 @@ export function percentageChange(oldValue: number, newValue: number): number {
   if (oldValue === 0) {
     return newValue === 0 ? 0 : Infinity;
   }
-  
+
   return ((newValue - oldValue) / Math.abs(oldValue)) * 100;
 }
 
@@ -290,7 +285,7 @@ export function relativeError(expected: number, actual: number): number {
   if (expected === 0) {
     return actual === 0 ? 0 : Infinity;
   }
-  
+
   return Math.abs((actual - expected) / expected);
 }
 

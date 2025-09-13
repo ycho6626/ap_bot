@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { searchKB, coach, startCheckout, openBillingPortal, listReviewCases, resolveCase, getUserProfile, getPricingPlans, healthCheck } from '../../src/lib/api.bridge';
+import {
+  searchKB,
+  coach,
+  startCheckout,
+  openBillingPortal,
+  listReviewCases,
+  resolveCase,
+  getUserProfile,
+  getPricingPlans,
+  healthCheck,
+} from '../../src/lib/api.bridge';
 
 // Mock the apiClient
 vi.mock('../../src/lib/api', () => ({
@@ -10,7 +20,7 @@ vi.mock('../../src/lib/api', () => ({
     getUserProfile: vi.fn(),
     getPricingPlans: vi.fn(),
     healthCheck: vi.fn(),
-  }
+  },
 }));
 
 // Mock Supabase
@@ -27,7 +37,7 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock Headers
-global.Headers = vi.fn().mockImplementation((init) => {
+global.Headers = vi.fn().mockImplementation(init => {
   const headers = new Map();
   if (init) {
     Object.entries(init).forEach(([key, value]) => {
@@ -36,10 +46,10 @@ global.Headers = vi.fn().mockImplementation((init) => {
   }
   return {
     set: vi.fn((key, value) => headers.set(key, value)),
-    get: vi.fn((key) => headers.get(key)),
-    has: vi.fn((key) => headers.has(key)),
-    delete: vi.fn((key) => headers.delete(key)),
-    forEach: vi.fn((callback) => headers.forEach(callback)),
+    get: vi.fn(key => headers.get(key)),
+    has: vi.fn(key => headers.has(key)),
+    delete: vi.fn(key => headers.delete(key)),
+    forEach: vi.fn(callback => headers.forEach(callback)),
     entries: vi.fn(() => headers.entries()),
     keys: vi.fn(() => headers.keys()),
     values: vi.fn(() => headers.values()),
@@ -90,7 +100,7 @@ describe('API Bridge', () => {
               topic: 'derivatives',
               subtopic: 'power_rule',
             },
-          }
+          },
         ],
         metadata: {
           query: 'test query',
@@ -100,7 +110,7 @@ describe('API Bridge', () => {
           searchTime: 100,
         },
       };
-      
+
       vi.mocked(apiClient.searchKnowledgeBase).mockResolvedValue(mockResponse);
 
       const result = await searchKB('test query', 'calc_ab');
@@ -118,7 +128,9 @@ describe('API Bridge', () => {
     it('should handle searchKnowledgeBase errors', async () => {
       vi.mocked(apiClient.searchKnowledgeBase).mockRejectedValue(new Error('API Error'));
 
-      await expect(searchKB('test query', 'calc_ab')).rejects.toThrow('Failed to search knowledge base');
+      await expect(searchKB('test query', 'calc_ab')).rejects.toThrow(
+        'Failed to search knowledge base'
+      );
     });
   });
 
@@ -136,7 +148,7 @@ describe('API Bridge', () => {
             title: 'Test Source',
             snippet: 'Test snippet',
             score: 0.9,
-          }
+          },
         ],
         suggestions: ['Try this approach'],
         metadata: {
@@ -148,7 +160,7 @@ describe('API Bridge', () => {
           retryCount: 0,
         },
       };
-      
+
       vi.mocked(apiClient.askCoach).mockResolvedValue(mockResponse);
 
       const result = await coach('test question', 'calc_bc');
@@ -168,7 +180,9 @@ describe('API Bridge', () => {
     it('should handle askCoach errors', async () => {
       vi.mocked(apiClient.askCoach).mockRejectedValue(new Error('API Error'));
 
-      await expect(coach('test question', 'calc_ab')).rejects.toThrow('Failed to get coach response');
+      await expect(coach('test question', 'calc_ab')).rejects.toThrow(
+        'Failed to get coach response'
+      );
     });
   });
 
@@ -178,7 +192,7 @@ describe('API Bridge', () => {
         id: 'cs_test_123',
         url: 'https://checkout.stripe.com/test',
       };
-      
+
       vi.mocked(apiClient.createCheckoutSession).mockResolvedValue(mockResponse);
 
       const result = await startCheckout('price_123');
@@ -198,9 +212,9 @@ describe('API Bridge', () => {
     it('should make authenticated request to billing portal endpoint', async () => {
       const mockToken = 'test-jwt-token';
       const mockResponse = { url: 'https://billing.stripe.com/test' };
-      
+
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: { access_token: mockToken } }
+        data: { session: { access_token: mockToken } },
       });
       mockFetch.mockResolvedValue({
         ok: true,
@@ -221,7 +235,7 @@ describe('API Bridge', () => {
 
     it('should handle billing portal errors', async () => {
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: null }
+        data: { session: null },
       });
       mockFetch.mockResolvedValue({
         ok: false,
@@ -246,11 +260,11 @@ describe('API Bridge', () => {
           status: 'pending',
           createdAt: '2023-01-01T00:00:00Z',
           updatedAt: '2023-01-01T00:00:00Z',
-        }
+        },
       ];
-      
+
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: { access_token: mockToken } }
+        data: { session: { access_token: mockToken } },
       });
       mockFetch.mockResolvedValue({
         ok: true,
@@ -271,7 +285,7 @@ describe('API Bridge', () => {
 
     it('should fallback to mock data on error', async () => {
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: null }
+        data: { session: null },
       });
       mockFetch.mockRejectedValue(new Error('Network error'));
 
@@ -285,7 +299,7 @@ describe('API Bridge', () => {
           verified: true,
           trustScore: 0.95,
           status: 'pending',
-        })
+        }),
       ]);
     });
   });
@@ -293,9 +307,9 @@ describe('API Bridge', () => {
   describe('resolveCase', () => {
     it('should make authenticated request to resolve case endpoint', async () => {
       const mockToken = 'test-jwt-token';
-      
+
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: { access_token: mockToken } }
+        data: { session: { access_token: mockToken } },
       });
       mockFetch.mockResolvedValue({
         ok: true,
@@ -316,9 +330,9 @@ describe('API Bridge', () => {
 
     it('should fallback to logging on error', async () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
+
       mockSupabaseClient.auth.getSession.mockResolvedValue({
-        data: { session: null }
+        data: { session: null },
       });
       mockFetch.mockRejectedValue(new Error('Network error'));
 
@@ -328,7 +342,7 @@ describe('API Bridge', () => {
         'Resolving case case_1 with action: reject',
         'Feedback: Needs improvement'
       );
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -343,7 +357,7 @@ describe('API Bridge', () => {
         createdAt: '2023-01-01T00:00:00Z',
         updatedAt: '2023-01-01T00:00:00Z',
       };
-      
+
       vi.mocked(apiClient.getUserProfile).mockResolvedValue(mockResponse);
 
       const result = await getUserProfile();
@@ -371,9 +385,9 @@ describe('API Bridge', () => {
           interval: 'month' as const,
           features: ['Basic features'],
           role: 'public' as const,
-        }
+        },
       ];
-      
+
       vi.mocked(apiClient.getPricingPlans).mockResolvedValue(mockResponse);
 
       const result = await getPricingPlans();
@@ -396,7 +410,7 @@ describe('API Bridge', () => {
         timestamp: '2023-01-01T00:00:00Z',
         services: { api: 'healthy', db: 'healthy' },
       };
-      
+
       vi.mocked(apiClient.healthCheck).mockResolvedValue(mockResponse);
 
       const result = await healthCheck();

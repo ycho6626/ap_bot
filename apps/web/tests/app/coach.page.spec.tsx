@@ -38,46 +38,52 @@ vi.mock('react-hot-toast', () => ({
 
 // Mock the Math component
 vi.mock('../../src/components/katex/Math', () => ({
-  Math: ({ content }: { content: string }) => <span data-testid="math-content">{content}</span>,
+  Math: ({ content }: { content: string }) => <span data-testid='math-content'>{content}</span>,
 }));
 
 // Mock other components
 vi.mock('../../src/components/VerifiedBadge', () => ({
   VerifiedBadge: ({ verified }: { verified: boolean }) => (
-    <span data-testid="verified-badge">{verified ? 'Verified' : 'Not Verified'}</span>
+    <span data-testid='verified-badge'>{verified ? 'Verified' : 'Not Verified'}</span>
   ),
 }));
 
 vi.mock('../../src/components/TrustMeter', () => ({
   TrustMeter: ({ score }: { score: number }) => (
-    <div data-testid="trust-meter" style={{ width: `${score * 100}%` }} />
+    <div data-testid='trust-meter' style={{ width: `${score * 100}%` }} />
   ),
 }));
 
 vi.mock('../../src/components/CitationsSidebar', () => ({
-  CitationsSidebar: ({ sources, isOpen, onClose }: { sources: any[], isOpen: boolean, onClose: () => void }) => (
-    isOpen ? <div data-testid="citations-sidebar">Citations: {sources.length}</div> : null
-  ),
+  CitationsSidebar: ({
+    sources,
+    isOpen,
+    onClose,
+  }: {
+    sources: any[];
+    isOpen: boolean;
+    onClose: () => void;
+  }) => (isOpen ? <div data-testid='citations-sidebar'>Citations: {sources.length}</div> : null),
 }));
 
 vi.mock('../../src/components/ExamVariantSelector', () => ({
-  ExamVariantSelector: ({ 
-    value, 
-    onChange 
-  }: { 
-    value: 'calc_ab' | 'calc_bc', 
-    onChange: (value: 'calc_ab' | 'calc_bc') => void 
+  ExamVariantSelector: ({
+    value,
+    onChange,
+  }: {
+    value: 'calc_ab' | 'calc_bc';
+    onChange: (value: 'calc_ab' | 'calc_bc') => void;
   }) => (
-    <div data-testid="exam-variant-selector">
-      <button 
-        data-testid="variant-ab" 
+    <div data-testid='exam-variant-selector'>
+      <button
+        data-testid='variant-ab'
         onClick={() => onChange('calc_ab')}
         className={value === 'calc_ab' ? 'selected' : ''}
       >
         AB
       </button>
-      <button 
-        data-testid="variant-bc" 
+      <button
+        data-testid='variant-bc'
         onClick={() => onChange('calc_bc')}
         className={value === 'calc_bc' ? 'selected' : ''}
       >
@@ -152,7 +158,7 @@ describe('CoachPage - AB/BC Variant Persistence', () => {
     // Submit a question
     const input = screen.getByPlaceholderText('Ask a AP Calculus BC question...');
     await user.type(input, 'What is the derivative of x²?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 
@@ -164,9 +170,9 @@ describe('CoachPage - AB/BC Variant Persistence', () => {
   it('should persist variant selection across page reloads', async () => {
     // Simulate page reload by re-rendering with different storage value
     mockExamVariantStorage.get.mockReturnValue('calc_bc');
-    
+
     const { rerender } = render(<CoachPage />);
-    
+
     // Simulate page reload - storage returns BC variant
     mockExamVariantStorage.get.mockReturnValue('calc_bc');
     rerender(<CoachPage />);
@@ -206,7 +212,7 @@ describe('CoachPage - AB/BC Variant Persistence', () => {
     // Submit a question with AB variant
     const input = screen.getByPlaceholderText('Ask a AP Calculus AB question...');
     await user.type(input, 'What is the integral of x?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 

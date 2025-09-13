@@ -1,7 +1,5 @@
 import { createLogger } from '@ap/shared';
-import { 
-  formatNumber
-} from '@ap/shared/numeric';
+import { formatNumber } from '@ap/shared/numeric';
 import type { FormattedStep } from './canonical';
 
 /**
@@ -142,12 +140,9 @@ export class RubricEnforcer {
    */
   async postprocess(
     content: string,
-    examVariant: 'calc_ab' | 'calc_bc',
+    examVariant: 'calc_ab' | 'calc_bc'
   ): Promise<PostprocessResult> {
-    this.logger.debug(
-      { examVariant, contentLength: content.length },
-      'Starting postprocessing',
-    );
+    this.logger.debug({ examVariant, contentLength: content.length }, 'Starting postprocessing');
 
     const violations: RubricViolation[] = [];
     let processedContent = content;
@@ -171,12 +166,12 @@ export class RubricEnforcer {
     const score = this.calculateScore(violations, metadata);
 
     this.logger.debug(
-      { 
+      {
         violations: violations.length,
         score,
         stepCount: formattedSteps.length,
       },
-      'Postprocessing completed',
+      'Postprocessing completed'
     );
 
     return {
@@ -292,14 +287,14 @@ export class RubricEnforcer {
    */
   private formatSignificantFigures(content: string, _violations: RubricViolation[]): string {
     const sigFigs = this.rubricConfig.formatting.significant_figures.default;
-    
+
     // Find numeric expressions and format them
     const numericRegex = /(\d+\.?\d*)/g;
-    
-    return content.replace(numericRegex, (match) => {
+
+    return content.replace(numericRegex, match => {
       const num = parseFloat(match);
       if (isNaN(num)) return match;
-      
+
       const formatted = formatNumber(num, { significantFigures: sigFigs });
       return formatted;
     });
@@ -313,14 +308,14 @@ export class RubricEnforcer {
    */
   private formatDecimalPlaces(content: string, _violations: RubricViolation[]): string {
     const decimalPlaces = this.rubricConfig.formatting.decimal_places.default;
-    
+
     // Find numeric expressions and format them
     const numericRegex = /(\d+\.?\d*)/g;
-    
-    return content.replace(numericRegex, (match) => {
+
+    return content.replace(numericRegex, match => {
       const num = parseFloat(match);
       if (isNaN(num)) return match;
-      
+
       const formatted = formatNumber(num, { decimalPlaces });
       return formatted;
     });
@@ -334,14 +329,14 @@ export class RubricEnforcer {
    */
   private formatUnits(content: string, _violations: RubricViolation[]): string {
     const format = this.rubricConfig.formatting.units.format;
-    
+
     // Find unit expressions and format them
     const unitRegex = /(\d+\.?\d*)\s*([a-zA-Z/²³]+)/g;
-    
+
     return content.replace(unitRegex, (match, number, unit) => {
       const num = parseFloat(number);
       if (isNaN(num)) return match;
-      
+
       switch (format) {
         case 'parentheses':
           return `${number} (${unit})`;
@@ -363,14 +358,14 @@ export class RubricEnforcer {
    */
   private formatScientificNotation(content: string, _violations: RubricViolation[]): string {
     const threshold = this.rubricConfig.formatting.scientific_notation.threshold;
-    
+
     // Find large numbers and convert to scientific notation
     const largeNumberRegex = /(\d+\.?\d*)/g;
-    
-    return content.replace(largeNumberRegex, (match) => {
+
+    return content.replace(largeNumberRegex, match => {
       const num = parseFloat(match);
       if (isNaN(num) || Math.abs(num) < threshold) return match;
-      
+
       return num.toExponential(2);
     });
   }
@@ -382,7 +377,7 @@ export class RubricEnforcer {
    */
   private checkTheoremUsage(content: string, violations: RubricViolation[]): void {
     const theorems = this.rubricConfig.justification.theorems.theorems;
-    const usedTheorems = theorems.filter(theorem => 
+    const usedTheorems = theorems.filter(theorem =>
       content.toLowerCase().includes(theorem.toLowerCase())
     );
 
@@ -403,9 +398,7 @@ export class RubricEnforcer {
    */
   private checkRuleUsage(content: string, violations: RubricViolation[]): void {
     const rules = this.rubricConfig.justification.rules.rules;
-    const usedRules = rules.filter(rule => 
-      content.toLowerCase().includes(rule.toLowerCase())
-    );
+    const usedRules = rules.filter(rule => content.toLowerCase().includes(rule.toLowerCase()));
 
     if (usedRules.length === 0) {
       violations.push({
@@ -443,7 +436,7 @@ export class RubricEnforcer {
    */
   private checkSeriesJustification(content: string, violations: RubricViolation[]): void {
     const phrases = this.rubricConfig.justification.series?.justification_phrases || [];
-    const hasSeriesJustification = phrases.some(phrase => 
+    const hasSeriesJustification = phrases.some(phrase =>
       content.toLowerCase().includes(phrase.toLowerCase())
     );
 
@@ -465,12 +458,12 @@ export class RubricEnforcer {
    */
   private formatDerivativeNotation(content: string, _violations: RubricViolation[]): string {
     const format = this.rubricConfig.notation.derivatives.format;
-    
+
     // Convert f'(x) to dy/dx format if needed
     if (format === 'dy/dx') {
       return content.replace(/f'\(([^)]+)\)/g, 'd/d$1');
     }
-    
+
     return content;
   }
 
@@ -581,7 +574,7 @@ export class RubricEnforcer {
       .trim();
 
     work = work.replace(/\n\s*\n/g, '\n').trim();
-    
+
     return work || stepText;
   }
 
@@ -615,12 +608,12 @@ export class RubricEnforcer {
     const theorems = [
       'Mean Value Theorem',
       'Intermediate Value Theorem',
-      'Rolle\'s Theorem',
+      "Rolle's Theorem",
       'Fundamental Theorem of Calculus',
       'Chain Rule',
       'Product Rule',
       'Quotient Rule',
-      'L\'Hôpital\'s Rule',
+      "L'Hôpital's Rule",
       'Squeeze Theorem',
     ];
 
@@ -639,14 +632,17 @@ export class RubricEnforcer {
    * @param steps - Formatted steps
    * @returns Metadata
    */
-  private calculateMetadata(content: string, steps: FormattedStep[]): PostprocessResult['metadata'] {
+  private calculateMetadata(
+    content: string,
+    steps: FormattedStep[]
+  ): PostprocessResult['metadata'] {
     return {
       hasUnits: /[a-zA-Z/²³]+/.test(content),
       hasJustification: /(?:because|since|as|due to|by)\s+/.test(content),
-      hasTheorems: this.rubricConfig.justification.theorems.theorems.some(theorem => 
+      hasTheorems: this.rubricConfig.justification.theorems.theorems.some(theorem =>
         content.toLowerCase().includes(theorem.toLowerCase())
       ),
-      hasRules: this.rubricConfig.justification.rules.rules.some(rule => 
+      hasRules: this.rubricConfig.justification.rules.rules.some(rule =>
         content.toLowerCase().includes(rule.toLowerCase())
       ),
       stepCount: steps.length,
@@ -660,7 +656,10 @@ export class RubricEnforcer {
    * @param metadata - Metadata
    * @returns Score (0-1)
    */
-  private calculateScore(violations: RubricViolation[], metadata: PostprocessResult['metadata']): number {
+  private calculateScore(
+    violations: RubricViolation[],
+    metadata: PostprocessResult['metadata']
+  ): number {
     let score = 1.0;
 
     // Deduct points for violations
@@ -729,7 +728,7 @@ export function loadRubricConfig(_examVariant: 'calc_ab' | 'calc_bc'): RubricCon
         theorems: [
           'Mean Value Theorem',
           'Intermediate Value Theorem',
-          'Rolle\'s Theorem',
+          "Rolle's Theorem",
           'Fundamental Theorem of Calculus',
         ],
         format: 'name_theorem_when_used',
@@ -737,12 +736,7 @@ export function loadRubricConfig(_examVariant: 'calc_ab' | 'calc_bc'): RubricCon
       rules: {
         required: true,
         enforce: true,
-        rules: [
-          'Chain Rule',
-          'Product Rule',
-          'Quotient Rule',
-          'Power Rule',
-        ],
+        rules: ['Chain Rule', 'Product Rule', 'Quotient Rule', 'Power Rule'],
         format: 'state_rule_when_applied',
       },
       steps: {
@@ -755,7 +749,7 @@ export function loadRubricConfig(_examVariant: 'calc_ab' | 'calc_bc'): RubricCon
     notation: {
       derivatives: {
         format: 'dy/dx',
-        alternative: 'f\'(x)',
+        alternative: "f'(x)",
         enforce: true,
       },
       integrals: {

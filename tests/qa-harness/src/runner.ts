@@ -93,7 +93,7 @@ function loadTrapItems(filePath: string): TrapItem[] {
  */
 async function runTestItem(
   item: GoldenItem | TrapItem,
-  config: HarnessConfig
+  _config: HarnessConfig
 ): Promise<TestResult> {
   const startTime = Date.now();
   
@@ -228,9 +228,9 @@ export async function runHarness(config: HarnessConfig = {
 // CLI interface
 if (import.meta.url === `file://${process.argv[1]}`) {
   const config: HarnessConfig = {
-    mockOpenAI: process.env.MOCK_OPENAI !== 'false',
-    maxConcurrency: parseInt(process.env.MAX_CONCURRENCY || '5'),
-    timeoutMs: parseInt(process.env.TIMEOUT_MS || '30000'),
+    mockOpenAI: process.env['MOCK_OPENAI'] !== 'false',
+    maxConcurrency: parseInt(process.env['MAX_CONCURRENCY'] || '5'),
+    timeoutMs: parseInt(process.env['TIMEOUT_MS'] || '30000'),
   };
 
   runHarness(config)

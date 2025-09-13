@@ -45,7 +45,10 @@ export function verifyStripeSignature(payload: string, signature: string): boole
     const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     return !!event;
   } catch (error) {
-    getLoggerInstance().warn({ error: error instanceof Error ? error.message : 'Unknown error' }, 'Stripe signature verification failed');
+    getLoggerInstance().warn(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'Stripe signature verification failed'
+    );
     return false;
   }
 }
@@ -63,8 +66,12 @@ export async function isWebhookEventProcessed(eventId: string): Promise<boolean>
     .eq('dedupe_key', eventId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-    getLoggerInstance().error({ error: error.message, eventId }, 'Failed to check webhook event idempotency');
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows returned
+    getLoggerInstance().error(
+      { error: error.message, eventId },
+      'Failed to check webhook event idempotency'
+    );
     throw new Error(`Failed to check webhook event idempotency: ${error.message}`);
   }
 
@@ -85,7 +92,7 @@ export async function recordWebhookEvent(
   eventType: string,
   payload: Record<string, unknown>,
   signatureOk: boolean,
-  httpStatus: number,
+  httpStatus: number
 ): Promise<string> {
   const { data, error } = await supabaseService
     .from('webhook_event')
@@ -96,16 +103,19 @@ export async function recordWebhookEvent(
       payload,
       signature_ok: signatureOk,
       http_status: httpStatus,
-    } as any)
+    })
     .select('id')
     .single();
 
   if (error) {
-    getLoggerInstance().error({ error: error.message, eventId, eventType }, 'Failed to record webhook event');
+    getLoggerInstance().error(
+      { error: error.message, eventId, eventType },
+      'Failed to record webhook event'
+    );
     throw new Error(`Failed to record webhook event: ${error.message}`);
   }
 
-  return (data as any).id;
+  return (data as { id: string }).id;
 }
 
 /**
@@ -113,7 +123,9 @@ export async function recordWebhookEvent(
  * @param invoice - Stripe invoice object
  * @returns Processing result
  */
-export async function processInvoicePaidEvent(invoice: Stripe.Invoice): Promise<WebhookProcessingResult> {
+export async function processInvoicePaidEvent(
+  invoice: Stripe.Invoice
+): Promise<WebhookProcessingResult> {
   try {
     if (!invoice.subscription || typeof invoice.subscription === 'string') {
       return {
@@ -124,12 +136,11 @@ export async function processInvoicePaidEvent(invoice: Stripe.Invoice): Promise<
     }
 
     // Get subscription details
-    const subscriptionId = typeof invoice.subscription === 'string' 
-      ? invoice.subscription 
-      : invoice.subscription.id;
+    const subscriptionId =
+      typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription.id;
     const stripe = getStripeClient();
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
+
     if (!subscription.items.data.length) {
       return {
         success: false,
@@ -172,14 +183,15 @@ export async function processInvoicePaidEvent(invoice: Stripe.Invoice): Promise<
     const userId = customerId;
 
     // Update user role
-    await supabaseService
-      .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role,
-      } as any);
+    await supabaseService.from('user_roles').upsert({
+      user_id: userId,
+      role,
+    });
 
-    getLoggerInstance().info({ userId, role, priceId }, 'User role updated from invoice.paid event');
+    getLoggerInstance().info(
+      { userId, role, priceId },
+      'User role updated from invoice.paid event'
+    );
 
     return {
       success: true,
@@ -189,7 +201,10 @@ export async function processInvoicePaidEvent(invoice: Stripe.Invoice): Promise<
       role,
     };
   } catch (error) {
-    getLoggerInstance().error({ error: error instanceof Error ? error.message : 'Unknown error' }, 'Failed to process invoice.paid event');
+    getLoggerInstance().error(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'Failed to process invoice.paid event'
+    );
     return {
       success: false,
       statusCode: 500,
@@ -203,7 +218,9 @@ export async function processInvoicePaidEvent(invoice: Stripe.Invoice): Promise<
  * @param subscription - Stripe subscription object
  * @returns Processing result
  */
-export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subscription): Promise<WebhookProcessingResult> {
+export async function processSubscriptionUpdatedEvent(
+  subscription: Stripe.Subscription
+): Promise<WebhookProcessingResult> {
   try {
     const customerId = subscription.customer as string;
     if (!customerId) {
@@ -237,7 +254,10 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
       const role = getRoleFromStripePrice(priceId);
 
       if (!role) {
-        getLoggerInstance().warn({ priceId }, 'Unknown Stripe price ID in subscription.updated event');
+        getLoggerInstance().warn(
+          { priceId },
+          'Unknown Stripe price ID in subscription.updated event'
+        );
         return {
           success: false,
           statusCode: 400,
@@ -245,14 +265,15 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
         };
       }
 
-      await supabaseService
-        .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role,
-        } as any);
+      await supabaseService.from('user_roles').upsert({
+        user_id: userId,
+        role,
+      });
 
-      getLoggerInstance().info({ userId, role, priceId }, 'User role updated from subscription.updated event');
+      getLoggerInstance().info(
+        { userId, role, priceId },
+        'User role updated from subscription.updated event'
+      );
 
       return {
         success: true,
@@ -269,17 +290,18 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
         .eq('user_id', userId);
 
       const currentRole = currentRoles?.[0]?.role as UserRole;
-      
+
       // Only downgrade if user doesn't have all_paid role
       if (currentRole !== 'all_paid') {
-        await supabaseService
-          .from('user_roles')
-          .upsert({
-            user_id: userId,
-            role: 'public',
-          } as any);
+        await supabaseService.from('user_roles').upsert({
+          user_id: userId,
+          role: 'public',
+        });
 
-        getLoggerInstance().info({ userId, previousRole: currentRole }, 'User downgraded to public from subscription cancellation');
+        getLoggerInstance().info(
+          { userId, previousRole: currentRole },
+          'User downgraded to public from subscription cancellation'
+        );
 
         return {
           success: true,
@@ -289,7 +311,10 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
           role: 'public',
         };
       } else {
-        getLoggerInstance().info({ userId }, 'User retains all_paid role despite subscription cancellation');
+        getLoggerInstance().info(
+          { userId },
+          'User retains all_paid role despite subscription cancellation'
+        );
         return {
           success: true,
           statusCode: 200,
@@ -306,7 +331,10 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
       message: 'Subscription status change not requiring role update',
     };
   } catch (error) {
-    getLoggerInstance().error({ error: error instanceof Error ? error.message : 'Unknown error' }, 'Failed to process subscription.updated event');
+    getLoggerInstance().error(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'Failed to process subscription.updated event'
+    );
     return {
       success: false,
       statusCode: 500,
@@ -321,11 +349,14 @@ export async function processSubscriptionUpdatedEvent(subscription: Stripe.Subsc
  * @param signature - Stripe signature header
  * @returns Processing result
  */
-export async function processStripeWebhook(payload: string, signature: string): Promise<WebhookProcessingResult> {
+export async function processStripeWebhook(
+  payload: string,
+  signature: string
+): Promise<WebhookProcessingResult> {
   try {
     // Verify signature
     const signatureOk = verifyStripeSignature(payload, signature);
-    
+
     if (!signatureOk) {
       await recordWebhookEvent('unknown', 'signature_verification_failed', {}, false, 401);
       return {
@@ -337,12 +368,19 @@ export async function processStripeWebhook(payload: string, signature: string): 
 
     // Parse event
     const stripe = getStripeClient();
-    const event = stripe.webhooks.constructEvent(payload, signature, config().STRIPE_WEBHOOK_SECRET);
-    
+    const event = stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      config().STRIPE_WEBHOOK_SECRET
+    );
+
     // Check idempotency
     const alreadyProcessed = await isWebhookEventProcessed(event.id);
     if (alreadyProcessed) {
-      getLoggerInstance().info({ eventId: event.id, eventType: event.type }, 'Webhook event already processed, skipping');
+      getLoggerInstance().info(
+        { eventId: event.id, eventType: event.type },
+        'Webhook event already processed, skipping'
+      );
       return {
         success: true,
         statusCode: 200,
@@ -355,10 +393,10 @@ export async function processStripeWebhook(payload: string, signature: string): 
     // Process based on event type
     switch (event.type) {
       case 'invoice.payment_succeeded':
-        result = await processInvoicePaidEvent(event.data.object as Stripe.Invoice);
+        result = await processInvoicePaidEvent(event.data.object);
         break;
       case 'customer.subscription.updated':
-        result = await processSubscriptionUpdatedEvent(event.data.object as Stripe.Subscription);
+        result = await processSubscriptionUpdatedEvent(event.data.object);
         break;
       default:
         getLoggerInstance().info({ eventType: event.type }, 'Unhandled webhook event type');
@@ -375,18 +413,24 @@ export async function processStripeWebhook(payload: string, signature: string): 
       event.type,
       event.data.object as Record<string, unknown>,
       signatureOk,
-      result.statusCode,
+      result.statusCode
     );
 
     return result;
   } catch (error) {
-    getLoggerInstance().error({ error: error instanceof Error ? error.message : 'Unknown error' }, 'Failed to process Stripe webhook');
-    
+    getLoggerInstance().error(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'Failed to process Stripe webhook'
+    );
+
     // Try to record the failed event
     try {
       await recordWebhookEvent('unknown', 'processing_error', {}, false, 500);
     } catch (recordError) {
-      getLoggerInstance().error({ error: recordError instanceof Error ? recordError.message : 'Unknown error' }, 'Failed to record failed webhook event');
+      getLoggerInstance().error(
+        { error: recordError instanceof Error ? recordError.message : 'Unknown error' },
+        'Failed to record failed webhook event'
+      );
     }
 
     return {

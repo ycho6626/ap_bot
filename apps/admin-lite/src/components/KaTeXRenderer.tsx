@@ -19,7 +19,7 @@ export function KaTeXRenderer({ content, className = '' }: KaTeXRendererProps) {
 
   // Split content by block math expressions
   const parts = content.split(blockMathRegex);
-  
+
   const renderPart = (part: string, index: number) => {
     // Check if this part is a math expression (odd indices in split result)
     if (index % 2 === 1) {
@@ -27,7 +27,11 @@ export function KaTeXRenderer({ content, className = '' }: KaTeXRendererProps) {
         return <BlockMath key={index} math={part} />;
       } catch (error) {
         console.warn('Failed to render block math:', part, error);
-        return <code key={index} className="bg-red-100 text-red-800 px-1 rounded">${part}$</code>;
+        return (
+          <code key={index} className='bg-red-100 text-red-800 px-1 rounded'>
+            ${part}$
+          </code>
+        );
       }
     }
 
@@ -39,7 +43,11 @@ export function KaTeXRenderer({ content, className = '' }: KaTeXRendererProps) {
           return <InlineMath key={`${index}-${inlineIndex}`} math={inlinePart} />;
         } catch (error) {
           console.warn('Failed to render inline math:', inlinePart, error);
-          return <code key={`${index}-${inlineIndex}`} className="bg-red-100 text-red-800 px-1 rounded">${inlinePart}$</code>;
+          return (
+            <code key={`${index}-${inlineIndex}`} className='bg-red-100 text-red-800 px-1 rounded'>
+              ${inlinePart}$
+            </code>
+          );
         }
       }
       return <span key={`${index}-${inlineIndex}`}>{inlinePart}</span>;

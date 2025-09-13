@@ -7,7 +7,7 @@ const logger = createLogger('security-plugin');
 /**
  * Security plugin with CSP and CORS configuration
  */
-export const securityPlugin: FastifyPluginAsync = async (fastify) => {
+export const securityPlugin: FastifyPluginAsync = async fastify => {
   // Register helmet for security headers
   await fastify.register(import('@fastify/helmet'), {
     contentSecurityPolicy: {
@@ -23,15 +23,8 @@ export const securityPlugin: FastifyPluginAsync = async (fastify) => {
           "'unsafe-inline'", // Required for Swagger UI
           "'unsafe-eval'", // Required for Swagger UI
         ],
-        fontSrc: [
-          "'self'",
-          'https://fonts.gstatic.com',
-        ],
-        imgSrc: [
-          "'self'",
-          'data:',
-          'https:',
-        ],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: [
           "'self'",
           'https://api.openai.com',
@@ -60,7 +53,7 @@ export const securityPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(import('@fastify/cors'), {
     origin: (origin, callback) => {
       const allowedOrigins = config().CORS_ORIGINS;
-      
+
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) {
         return callback(null, true);
@@ -75,7 +68,7 @@ export const securityPlugin: FastifyPluginAsync = async (fastify) => {
           origin,
           allowedOrigins,
         },
-        'CORS request blocked from disallowed origin',
+        'CORS request blocked from disallowed origin'
       );
 
       return callback(new Error('Not allowed by CORS'), false);
@@ -91,11 +84,7 @@ export const securityPlugin: FastifyPluginAsync = async (fastify) => {
       'X-API-Key',
       'X-Request-ID',
     ],
-    exposedHeaders: [
-      'X-Answer-Verified',
-      'X-Answer-Trust',
-      'X-Request-ID',
-    ],
+    exposedHeaders: ['X-Answer-Verified', 'X-Answer-Trust', 'X-Request-ID'],
   });
 
   // Add security headers middleware
@@ -105,26 +94,28 @@ export const securityPlugin: FastifyPluginAsync = async (fastify) => {
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     // Add request ID for tracing
-    const requestId = request.headers['x-request-id'] || 
-                     request.id || 
-                     `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const requestId =
+      request.headers['x-request-id'] ||
+      request.id ||
+      `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     reply.header('X-Request-ID', requestId);
-    
+
     return payload;
   });
 
   // Request ID middleware
   fastify.addHook('onRequest', async (request, reply) => {
-    const requestId = request.headers['x-request-id'] || 
-                     request.id || 
-                     `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const requestId =
+      request.headers['x-request-id'] ||
+      request.id ||
+      `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Store request ID in request object for logging
     (request as any).requestId = requestId;
-    
+
     // Add to reply headers
     reply.header('X-Request-ID', requestId);
   });

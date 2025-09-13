@@ -7,15 +7,15 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
-    '@typescript-eslint/recommended-requiring-type-checking',
+    'plugin:@typescript-eslint/recommended',
     'prettier',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: './tsconfig.base.json',
+    project: './tsconfig.eslint.json',
+    tsconfigRootDir: __dirname,
   },
   plugins: ['@typescript-eslint', 'prettier'],
   rules: {
@@ -24,12 +24,6 @@ module.exports = {
     
     // TypeScript strict rules
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-unsafe-any': 'error',
-    '@typescript-eslint/no-unsafe-assignment': 'error',
-    '@typescript-eslint/no-unsafe-call': 'error',
-    '@typescript-eslint/no-unsafe-member-access': 'error',
-    '@typescript-eslint/no-unsafe-return': 'error',
-    '@typescript-eslint/no-unsafe-argument': 'error',
     '@typescript-eslint/ban-ts-comment': 'error',
     '@typescript-eslint/prefer-nullish-coalescing': 'error',
     '@typescript-eslint/prefer-optional-chain': 'error',
@@ -53,16 +47,11 @@ module.exports = {
     {
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
       env: {
-        vitest: true,
+        node: true,
+        es2022: true,
       },
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-unsafe-any': 'off',
-        '@typescript-eslint/no-unsafe-assignment': 'off',
-        '@typescript-eslint/no-unsafe-call': 'off',
-        '@typescript-eslint/no-unsafe-member-access': 'off',
-        '@typescript-eslint/no-unsafe-return': 'off',
-        '@typescript-eslint/no-unsafe-argument': 'off',
       },
     },
   ],

@@ -6,7 +6,7 @@ import { createVerifierClient } from '@ap/shared';
 /**
  * Verifier check types
  */
-export type VerifierCheckType = 
+export type VerifierCheckType =
   | 'derivative'
   | 'integral'
   | 'limit'
@@ -80,7 +80,7 @@ export class VerifierClient {
   async verify(
     problem: string,
     solution: string,
-    options: VerificationOptions = {},
+    options: VerificationOptions = {}
   ): Promise<VerifierResponse> {
     const {
       checkTypes = ['derivative', 'integral', 'limit', 'algebra', 'units'],
@@ -91,42 +91,44 @@ export class VerifierClient {
     } = options;
 
     this.logger.debug(
-      { 
+      {
         problemLength: problem.length,
         solutionLength: solution.length,
         checkTypes,
         tolerance,
       },
-      'Starting verification',
+      'Starting verification'
     );
 
     try {
-      const response = await this.client.post('verify', {
-        json: {
-          problem,
-          solution,
-          check_types: checkTypes,
-          tolerance,
-          allow_constants: allowConstants,
-          strict_units: strictUnits,
-        },
-        timeout,
-      }).json<VerifierResponse>();
+      const response = await this.client
+        .post('verify', {
+          json: {
+            problem,
+            solution,
+            check_types: checkTypes,
+            tolerance,
+            allow_constants: allowConstants,
+            strict_units: strictUnits,
+          },
+          timeout,
+        })
+        .json<VerifierResponse>();
 
       this.logger.debug(
-        { 
+        {
           ok: response.ok,
           checksCount: response.checks.length,
           overallConfidence: response.overallConfidence,
         },
-        'Verification completed',
+        'Verification completed'
       );
 
       return response;
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Verification failed',
+        'Verification failed'
       );
 
       return {
@@ -149,16 +151,18 @@ export class VerifierClient {
   async verifyDerivative(
     func: string,
     derivative: string,
-    variable: string = 'x',
+    variable: string = 'x'
   ): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/derivative', {
-        json: {
-          function: func,
-          derivative,
-          variable,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/derivative', {
+          json: {
+            function: func,
+            derivative,
+            variable,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -183,17 +187,19 @@ export class VerifierClient {
     func: string,
     integral: string,
     variable: string = 'x',
-    bounds?: { lower: number; upper: number },
+    bounds?: { lower: number; upper: number }
   ): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/integral', {
-        json: {
-          function: func,
-          integral,
-          variable,
-          bounds,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/integral', {
+          json: {
+            function: func,
+            integral,
+            variable,
+            bounds,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -218,17 +224,19 @@ export class VerifierClient {
     expression: string,
     limit: string,
     variable: string = 'x',
-    value: string = '0',
+    value: string = '0'
   ): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/limit', {
-        json: {
-          expression,
-          limit,
-          variable,
-          value,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/limit', {
+          json: {
+            expression,
+            limit,
+            variable,
+            value,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -251,16 +259,18 @@ export class VerifierClient {
   async verifyAlgebra(
     expression1: string,
     expression2: string,
-    variable: string = 'x',
+    variable: string = 'x'
   ): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/algebra', {
-        json: {
-          expression1,
-          expression2,
-          variable,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/algebra', {
+          json: {
+            expression1,
+            expression2,
+            variable,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -279,17 +289,16 @@ export class VerifierClient {
    * @param expectedUnits - Expected units
    * @returns Verification result
    */
-  async verifyUnits(
-    expression: string,
-    expectedUnits: string,
-  ): Promise<VerifierCheckResult> {
+  async verifyUnits(expression: string, expectedUnits: string): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/units', {
-        json: {
-          expression,
-          expected_units: expectedUnits,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/units', {
+          json: {
+            expression,
+            expected_units: expectedUnits,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -310,15 +319,17 @@ export class VerifierClient {
    */
   async verifyDimensionalAnalysis(
     expression: string,
-    expectedDimensions: string,
+    expectedDimensions: string
   ): Promise<VerifierCheckResult> {
     try {
-      const response = await this.client.post('verify/dimensional', {
-        json: {
-          expression,
-          expected_dimensions: expectedDimensions,
-        },
-      }).json<VerifierCheckResult>();
+      const response = await this.client
+        .post('verify/dimensional', {
+          json: {
+            expression,
+            expected_dimensions: expectedDimensions,
+          },
+        })
+        .json<VerifierCheckResult>();
 
       return response;
     } catch (error) {
@@ -339,16 +350,16 @@ export class VerifierClient {
    */
   calculateTrustScore(response: VerifierResponse, solution: string): TrustScore {
     const checks = response.checks;
-    
+
     // Mathematical correctness
     const mathematicalScore = this.calculateMathematicalScore(checks);
-    
+
     // Units correctness
     const unitsScore = this.calculateUnitsScore(checks);
-    
+
     // Notation correctness
     const notationScore = this.calculateNotationScore(solution);
-    
+
     // Consistency
     const consistencyScore = this.calculateConsistencyScore(checks);
 
@@ -360,12 +371,8 @@ export class VerifierClient {
     };
 
     // Weighted average
-    const score = (
-      mathematicalScore * 0.4 +
-      unitsScore * 0.2 +
-      notationScore * 0.2 +
-      consistencyScore * 0.2
-    );
+    const score =
+      mathematicalScore * 0.4 + unitsScore * 0.2 + notationScore * 0.2 + consistencyScore * 0.2;
 
     // Confidence based on number of checks and their quality
     const confidence = this.calculateConfidence(checks, response.overallConfidence);
@@ -383,14 +390,15 @@ export class VerifierClient {
    * @returns Score (0-1)
    */
   private calculateMathematicalScore(checks: VerifierCheckResult[]): number {
-    const mathChecks = checks.filter(check => 
+    const mathChecks = checks.filter(check =>
       ['derivative', 'integral', 'limit', 'algebra'].includes(check.type)
     );
 
     if (mathChecks.length === 0) return 0.5; // Neutral if no math checks
 
     const passedChecks = mathChecks.filter(check => check.passed);
-    const avgConfidence = mathChecks.reduce((sum, check) => sum + check.confidence, 0) / mathChecks.length;
+    const avgConfidence =
+      mathChecks.reduce((sum, check) => sum + check.confidence, 0) / mathChecks.length;
 
     return (passedChecks.length / mathChecks.length) * avgConfidence;
   }
@@ -401,14 +409,15 @@ export class VerifierClient {
    * @returns Score (0-1)
    */
   private calculateUnitsScore(checks: VerifierCheckResult[]): number {
-    const unitChecks = checks.filter(check => 
+    const unitChecks = checks.filter(check =>
       ['units', 'dimensional_analysis'].includes(check.type)
     );
 
     if (unitChecks.length === 0) return 0.5; // Neutral if no unit checks
 
     const passedChecks = unitChecks.filter(check => check.passed);
-    const avgConfidence = unitChecks.reduce((sum, check) => sum + check.confidence, 0) / unitChecks.length;
+    const avgConfidence =
+      unitChecks.reduce((sum, check) => sum + check.confidence, 0) / unitChecks.length;
 
     return (passedChecks.length / unitChecks.length) * avgConfidence;
   }
@@ -444,12 +453,14 @@ export class VerifierClient {
     // Check for consistency in confidence levels
     const confidences = checks.map(check => check.confidence);
     const avgConfidence = confidences.reduce((sum, conf) => sum + conf, 0) / confidences.length;
-    const variance = confidences.reduce((sum, conf) => sum + Math.pow(conf - avgConfidence, 2), 0) / confidences.length;
+    const variance =
+      confidences.reduce((sum, conf) => sum + Math.pow(conf - avgConfidence, 2), 0) /
+      confidences.length;
     const stdDev = Math.sqrt(variance);
 
     // Lower standard deviation = higher consistency
     const consistency = Math.max(0, 1 - stdDev);
-    
+
     return consistency;
   }
 
@@ -463,7 +474,8 @@ export class VerifierClient {
     if (checks.length === 0) return 0.1;
 
     // Base confidence on number of checks and their quality
-    const avgCheckConfidence = checks.reduce((sum, check) => sum + check.confidence, 0) / checks.length;
+    const avgCheckConfidence =
+      checks.reduce((sum, check) => sum + check.confidence, 0) / checks.length;
     const checkCountFactor = Math.min(1, checks.length / 5); // Normalize to 5 checks max
 
     return (avgCheckConfidence * 0.7 + overallConfidence * 0.3) * checkCountFactor;

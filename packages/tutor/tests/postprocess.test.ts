@@ -77,7 +77,7 @@ describe('RubricEnforcer', () => {
     notation: {
       derivatives: {
         format: 'dy/dx',
-        alternative: 'f\'(x)',
+        alternative: "f'(x)",
         enforce: true,
       },
       integrals: {
@@ -102,7 +102,8 @@ describe('RubricEnforcer', () => {
 
   describe('postprocess', () => {
     it('should postprocess content according to rubric', async () => {
-      const content = 'Step 1: Find the derivative of x^2\nStep 2: Apply the power rule\nStep 3: Simplify to get 2x';
+      const content =
+        'Step 1: Find the derivative of x^2\nStep 2: Apply the power rule\nStep 3: Simplify to get 2x';
       const result = await enforcer.postprocess(content, 'calc_ab');
 
       expect(result.content).toBeDefined();
@@ -136,7 +137,7 @@ describe('RubricEnforcer', () => {
     it('should format numbers with significant figures', () => {
       const content = 'The answer is 3.14159';
       const result = (enforcer as any).formatSignificantFigures(content, []);
-      
+
       expect(result).toContain('3.14'); // Should be formatted to 3 sig figs
     });
   });
@@ -145,7 +146,7 @@ describe('RubricEnforcer', () => {
     it('should format units in parentheses', () => {
       const content = 'The velocity is 5 m/s';
       const result = (enforcer as any).formatUnits(content, []);
-      
+
       expect(result).toContain('5 (m/s)');
     });
   });
@@ -154,9 +155,9 @@ describe('RubricEnforcer', () => {
     it('should detect missing theorems', () => {
       const content = 'The solution is correct';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkTheoremUsage(content, violations);
-      
+
       expect(violations.length).toBeGreaterThan(0);
       expect(violations[0].type).toBe('justification');
       expect(violations[0].rule).toBe('theorem_usage');
@@ -165,9 +166,9 @@ describe('RubricEnforcer', () => {
     it('should not flag when theorems are present', () => {
       const content = 'Using the Mean Value Theorem, we can find the derivative';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkTheoremUsage(content, violations);
-      
+
       expect(violations.length).toBe(0);
     });
   });
@@ -176,9 +177,9 @@ describe('RubricEnforcer', () => {
     it('should detect missing rules', () => {
       const content = 'The solution is correct';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkRuleUsage(content, violations);
-      
+
       expect(violations.length).toBeGreaterThan(0);
       expect(violations[0].type).toBe('justification');
       expect(violations[0].rule).toBe('rule_usage');
@@ -187,9 +188,9 @@ describe('RubricEnforcer', () => {
     it('should not flag when rules are present', () => {
       const content = 'Using the Power Rule, we get 2x';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkRuleUsage(content, violations);
-      
+
       expect(violations.length).toBe(0);
     });
   });
@@ -198,9 +199,9 @@ describe('RubricEnforcer', () => {
     it('should flag insufficient steps', () => {
       const content = 'The answer is 2x';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkStepCount(content, violations);
-      
+
       expect(violations.length).toBeGreaterThan(0);
       expect(violations[0].type).toBe('justification');
       expect(violations[0].rule).toBe('step_count');
@@ -209,18 +210,18 @@ describe('RubricEnforcer', () => {
     it('should not flag sufficient steps', () => {
       const content = 'Step 1: Find the derivative\nStep 2: Apply the rule\nStep 3: Simplify';
       const violations: any[] = [];
-      
+
       (enforcer as any).checkStepCount(content, violations);
-      
+
       expect(violations.length).toBe(0);
     });
   });
 
   describe('formatDerivativeNotation', () => {
-    it('should convert f\'(x) to dy/dx format', () => {
-      const content = 'f\'(x) = 2x';
+    it("should convert f'(x) to dy/dx format", () => {
+      const content = "f'(x) = 2x";
       const result = (enforcer as any).formatDerivativeNotation(content, []);
-      
+
       expect(result).toContain('d/dx');
     });
   });
@@ -229,7 +230,7 @@ describe('RubricEnforcer', () => {
     it('should convert integral of to ∫', () => {
       const content = 'integral of x dx';
       const result = (enforcer as any).formatIntegralNotation(content, []);
-      
+
       expect(result).toContain('∫');
     });
   });
@@ -238,7 +239,7 @@ describe('RubricEnforcer', () => {
     it('should convert limit as to lim', () => {
       const content = 'limit as x approaches 0';
       const result = (enforcer as any).formatLimitNotation(content, []);
-      
+
       expect(result).toContain('lim');
     });
   });
@@ -247,7 +248,7 @@ describe('RubricEnforcer', () => {
     it('should parse structured steps', () => {
       const content = 'Step 1: Find the derivative\nApply the power rule\nStep 2: Simplify\nget 2x';
       const steps = (enforcer as any).parseSteps(content);
-      
+
       expect(steps).toHaveLength(2);
       expect(steps[0].step).toBe(1);
       expect(steps[0].work).toContain('Apply the power rule');
@@ -258,7 +259,7 @@ describe('RubricEnforcer', () => {
     it('should handle unstructured content', () => {
       const content = 'This is just a regular solution';
       const steps = (enforcer as any).parseSteps(content);
-      
+
       expect(steps).toHaveLength(1);
       expect(steps[0].step).toBe(1);
       expect(steps[0].description).toBe('Solution');
@@ -270,14 +271,14 @@ describe('RubricEnforcer', () => {
     it('should extract description from step text', () => {
       const stepText = 'Step 1: Find the derivative of x^2';
       const description = (enforcer as any).extractDescription(stepText);
-      
+
       expect(description).toContain('Find the derivative');
     });
 
     it('should handle different description patterns', () => {
       const stepText = 'First, we need to apply the power rule';
       const description = (enforcer as any).extractDescription(stepText);
-      
+
       expect(description).toContain('First, we need to apply the power rule');
     });
   });
@@ -286,7 +287,7 @@ describe('RubricEnforcer', () => {
     it('should extract work from step text', () => {
       const stepText = 'Step 1: Find the derivative\nApply the power rule\nd/dx(x^2) = 2x';
       const work = (enforcer as any).extractWork(stepText);
-      
+
       expect(work).toContain('Apply the power rule');
       expect(work).toContain('d/dx(x^2) = 2x');
     });
@@ -296,14 +297,14 @@ describe('RubricEnforcer', () => {
     it('should extract justification from step text', () => {
       const stepText = 'Apply the power rule because it is a polynomial function';
       const justification = (enforcer as any).extractJustification(stepText);
-      
+
       expect(justification).toContain('because it is a polynomial function');
     });
 
     it('should return undefined when no justification found', () => {
       const stepText = 'Apply the power rule';
       const justification = (enforcer as any).extractJustification(stepText);
-      
+
       expect(justification).toBeUndefined();
     });
   });
@@ -312,28 +313,28 @@ describe('RubricEnforcer', () => {
     it('should extract theorem references', () => {
       const stepText = 'Using the Mean Value Theorem, we can find the derivative';
       const theorem = (enforcer as any).extractTheorem(stepText);
-      
+
       expect(theorem).toBe('Mean Value Theorem');
     });
 
     it('should return undefined when no theorem found', () => {
       const stepText = 'Apply the power rule';
       const theorem = (enforcer as any).extractTheorem(stepText);
-      
+
       expect(theorem).toBeUndefined();
     });
   });
 
   describe('calculateMetadata', () => {
     it('should calculate metadata correctly', () => {
-      const content = 'Using the Mean Value Theorem, we get f\'(x) = 2x (m/s)';
+      const content = "Using the Mean Value Theorem, we get f'(x) = 2x (m/s)";
       const steps = [
         { step: 1, description: 'test', work: 'test' },
         { step: 2, description: 'test', work: 'test' },
       ];
-      
+
       const metadata = (enforcer as any).calculateMetadata(content, steps);
-      
+
       expect(metadata.hasUnits).toBe(true);
       expect(metadata.hasJustification).toBe(true);
       expect(metadata.hasTheorems).toBe(true);
@@ -345,10 +346,7 @@ describe('RubricEnforcer', () => {
 
   describe('calculateScore', () => {
     it('should calculate score based on violations and metadata', () => {
-      const violations = [
-        { severity: 'error' },
-        { severity: 'warning' },
-      ];
+      const violations = [{ severity: 'error' }, { severity: 'warning' }];
       const metadata = {
         hasUnits: true,
         hasJustification: true,
@@ -357,9 +355,9 @@ describe('RubricEnforcer', () => {
         stepCount: 3,
         wordCount: 100,
       };
-      
+
       const score = (enforcer as any).calculateScore(violations, metadata);
-      
+
       expect(score).toBeGreaterThan(0);
       expect(score).toBeLessThanOrEqual(1);
     });
@@ -369,7 +367,7 @@ describe('RubricEnforcer', () => {
 describe('loadRubricConfig', () => {
   it('should load rubric configuration for AB variant', () => {
     const config = loadRubricConfig('calc_ab');
-    
+
     expect(config.formatting.units.required).toBe(true);
     expect(config.formatting.significant_figures.required).toBe(true);
     expect(config.justification.theorems.required).toBe(true);
@@ -378,7 +376,7 @@ describe('loadRubricConfig', () => {
 
   it('should load rubric configuration for BC variant', () => {
     const config = loadRubricConfig('calc_bc');
-    
+
     expect(config.formatting.units.required).toBe(true);
     expect(config.formatting.significant_figures.required).toBe(true);
     expect(config.justification.theorems.required).toBe(true);

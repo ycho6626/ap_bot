@@ -1,8 +1,8 @@
 export { hybridRetrieval, HybridRetrieval } from './hybrid';
 export type { SearchResult, HybridSearchOptions } from './hybrid';
-export { 
-  expandQuery, 
-  createSearchTerms, 
+export {
+  expandQuery,
+  createSearchTerms,
   boostTermsByVariant,
   extractMathExpressions,
   normalizeMathNotation,

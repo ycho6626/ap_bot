@@ -11,18 +11,22 @@ vi.mock('@ap/shared', () => ({
           or: vi.fn(() => ({
             in: vi.fn(() => ({
               not: vi.fn(() => ({
-                limit: vi.fn(() => Promise.resolve({
-                  data: [],
-                  error: null,
-                })),
+                limit: vi.fn(() =>
+                  Promise.resolve({
+                    data: [],
+                    error: null,
+                  })
+                ),
               })),
             })),
           })),
         })),
-        single: vi.fn(() => Promise.resolve({
-          data: null,
-          error: { code: 'PGRST116' },
-        })),
+        single: vi.fn(() =>
+          Promise.resolve({
+            data: null,
+            error: { code: 'PGRST116' },
+          })
+        ),
       })),
     })),
   },
@@ -40,7 +44,7 @@ describe('CanonicalManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create a mock query builder that returns itself for chaining
     const mockQuery = {
       select: vi.fn().mockReturnThis(),
@@ -49,11 +53,11 @@ describe('CanonicalManager', () => {
       or: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       not: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null })
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
     };
-    
+
     (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
-    
+
     manager = new CanonicalManager();
   });
 
@@ -72,8 +76,8 @@ describe('CanonicalManager', () => {
             {
               step: 1,
               description: 'Apply the power rule',
-              work: 'd/dx(x^2) = 2x'
-            }
+              work: 'd/dx(x^2) = 2x',
+            },
           ],
           final_answer: '2x',
           rubric: {},
@@ -91,13 +95,13 @@ describe('CanonicalManager', () => {
         or: vi.fn().mockReturnThis(),
         in: vi.fn().mockReturnThis(),
         not: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockData, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockData, error: null }),
       };
-      
+
       // Make the queryBuilder itself awaitable
       Object.setPrototypeOf(mockQuery, Promise.prototype);
       mockQuery.then = vi.fn().mockResolvedValue({ data: mockData, error: null });
-      
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
       const result = await manager.findBestCanonical('How to find the derivative of x^2?', {
@@ -118,13 +122,13 @@ describe('CanonicalManager', () => {
         or: vi.fn().mockReturnThis(),
         in: vi.fn().mockReturnThis(),
         not: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
-      
+
       // Make the queryBuilder itself awaitable
       Object.setPrototypeOf(mockQuery, Promise.prototype);
       mockQuery.then = vi.fn().mockResolvedValue({ data: [], error: null });
-      
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
       const result = await manager.findBestCanonical('Unknown topic', {
@@ -143,16 +147,20 @@ describe('CanonicalManager', () => {
         or: vi.fn().mockReturnThis(),
         in: vi.fn().mockReturnThis(),
         not: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
-      
+
       // Make the queryBuilder itself awaitable
       Object.setPrototypeOf(mockQuery, Promise.prototype);
-      mockQuery.then = vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } });
-      
+      mockQuery.then = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'Database error' } });
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
-      await expect(manager.findBestCanonical('test query')).rejects.toThrow('Canonical solution search failed: Database error');
+      await expect(manager.findBestCanonical('test query')).rejects.toThrow(
+        'Canonical solution search failed: Database error'
+      );
     });
   });
 
@@ -170,17 +178,21 @@ describe('CanonicalManager', () => {
           {
             step: 1,
             description: 'Apply the derivative rules',
-            work: 'd/dx(f(x)) = f\'(x)'
-          }
+            work: "d/dx(f(x)) = f'(x)",
+          },
         ],
-        final_answer: 'f\'(x)',
+        final_answer: "f'(x)",
         rubric: {},
         tags: ['derivatives', 'basic'],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
-      const relevance = (manager as any).calculateRelevance(solution, 'derivatives rate of change', 'calc_ab');
+      const relevance = (manager as any).calculateRelevance(
+        solution,
+        'derivatives rate of change',
+        'calc_ab'
+      );
       expect(relevance).toBeGreaterThanOrEqual(0.5);
     });
 
@@ -197,8 +209,8 @@ describe('CanonicalManager', () => {
           {
             step: 1,
             description: 'Test step',
-            work: 'test work'
-          }
+            work: 'test work',
+          },
         ],
         final_answer: 'test answer',
         rubric: {},
@@ -224,8 +236,8 @@ describe('CanonicalManager', () => {
           {
             step: 1,
             description: 'Test step',
-            work: 'test work'
-          }
+            work: 'test work',
+          },
         ],
         final_answer: 'test answer',
         rubric: {},
@@ -253,13 +265,13 @@ describe('CanonicalManager', () => {
           {
             step: 1,
             description: 'Find the derivative\nApply the power rule',
-            work: 'd/dx(x^2) = 2x'
+            work: 'd/dx(x^2) = 2x',
           },
           {
             step: 2,
             description: 'Simplify\nget 2x',
-            work: '2x'
-          }
+            work: '2x',
+          },
         ],
         final_answer: '2x',
         rubric: {},
@@ -313,13 +325,13 @@ describe('CanonicalManager', () => {
           {
             step: 1,
             description: 'Find the derivative\nApply the power rule because it is a polynomial',
-            work: 'd/dx(x^2) = 2x'
+            work: 'd/dx(x^2) = 2x',
           },
           {
             step: 2,
             description: 'Simplify',
-            work: '2x'
-          }
+            work: '2x',
+          },
         ],
         final_answer: '2x',
         rubric: {},
@@ -344,9 +356,10 @@ describe('CanonicalManager', () => {
         steps: [
           {
             step: 1,
-            description: 'Apply the Mean Value Theorem\nThis guarantees a point where the derivative equals the average rate of change',
-            work: 'MVT application'
-          }
+            description:
+              'Apply the Mean Value Theorem\nThis guarantees a point where the derivative equals the average rate of change',
+            work: 'MVT application',
+          },
         ],
         final_answer: 'MVT result',
         rubric: {},
@@ -387,9 +400,9 @@ describe('CanonicalManager', () => {
         single: vi.fn().mockResolvedValue({
           data: mockData,
           error: null,
-        })
+        }),
       };
-      
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
       const result = await manager.getCanonicalById('1');
@@ -409,9 +422,9 @@ describe('CanonicalManager', () => {
         single: vi.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
-        })
+        }),
       };
-      
+
       (supabaseService as any).from = vi.fn().mockReturnValue(mockQuery);
 
       const result = await manager.getCanonicalById('nonexistent');

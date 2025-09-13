@@ -14,7 +14,7 @@ export function TrustMeter({ score, className }: TrustMeterProps) {
       <div
         className={cn('trust-fill', colorClass)}
         style={{ width: `${percentage}%` }}
-        role="progressbar"
+        role='progressbar'
         aria-valuenow={percentage}
         aria-valuemin={0}
         aria-valuemax={100}

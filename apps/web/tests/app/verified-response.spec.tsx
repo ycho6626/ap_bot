@@ -38,33 +38,35 @@ vi.mock('react-hot-toast', () => ({
 
 // Mock the Math component
 vi.mock('../../src/components/katex/Math', () => ({
-  Math: ({ content }: { content: string }) => <span data-testid="math-content">{content}</span>,
+  Math: ({ content }: { content: string }) => <span data-testid='math-content'>{content}</span>,
 }));
 
 // Mock other components
 vi.mock('../../src/components/VerifiedBadge', () => ({
   VerifiedBadge: ({ verified }: { verified: boolean }) => (
-    <span data-testid="verified-badge">{verified ? 'Verified' : 'Not Verified'}</span>
+    <span data-testid='verified-badge'>{verified ? 'Verified' : 'Not Verified'}</span>
   ),
 }));
 
 vi.mock('../../src/components/TrustMeter', () => ({
   TrustMeter: ({ score }: { score: number }) => (
-    <div data-testid="trust-meter" style={{ width: `${score * 100}%` }} />
+    <div data-testid='trust-meter' style={{ width: `${score * 100}%` }} />
   ),
 }));
 
 vi.mock('../../src/components/CitationsSidebar', () => ({
-  CitationsSidebar: ({ sources, onClose }: { sources: any[], onClose: () => void }) => (
-    <div data-testid="citations-sidebar">
-      <button onClick={onClose} data-testid="close-citations">Close</button>
-      <div data-testid="sources-count">Sources: {sources.length}</div>
+  CitationsSidebar: ({ sources, onClose }: { sources: any[]; onClose: () => void }) => (
+    <div data-testid='citations-sidebar'>
+      <button onClick={onClose} data-testid='close-citations'>
+        Close
+      </button>
+      <div data-testid='sources-count'>Sources: {sources.length}</div>
       {sources.map((source, index) => (
         <a
           key={index}
           href={`/lessons/${source.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          target='_blank'
+          rel='noopener noreferrer'
           data-testid={`source-link-${index}`}
         >
           {source.title}
@@ -75,23 +77,23 @@ vi.mock('../../src/components/CitationsSidebar', () => ({
 }));
 
 vi.mock('../../src/components/ExamVariantSelector', () => ({
-  ExamVariantSelector: ({ 
-    value, 
-    onChange 
-  }: { 
-    value: 'calc_ab' | 'calc_bc', 
-    onChange: (value: 'calc_ab' | 'calc_bc') => void 
+  ExamVariantSelector: ({
+    value,
+    onChange,
+  }: {
+    value: 'calc_ab' | 'calc_bc';
+    onChange: (value: 'calc_ab' | 'calc_bc') => void;
   }) => (
-    <div data-testid="exam-variant-selector">
-      <button 
-        data-testid="variant-ab" 
+    <div data-testid='exam-variant-selector'>
+      <button
+        data-testid='variant-ab'
         onClick={() => onChange('calc_ab')}
         className={value === 'calc_ab' ? 'selected' : ''}
       >
         AB
       </button>
-      <button 
-        data-testid="variant-bc" 
+      <button
+        data-testid='variant-bc'
         onClick={() => onChange('calc_bc')}
         className={value === 'calc_bc' ? 'selected' : ''}
       >
@@ -124,8 +126,8 @@ describe('Verified Response Rendering', () => {
           id: 'derivative-rules',
           title: 'Derivative Rules',
           snippet: 'The derivative of x^n is nx^(n-1)',
-          score: 0.95
-        }
+          score: 0.95,
+        },
       ],
       suggestions: ['Try asking about the chain rule'],
       metadata: {
@@ -142,7 +144,7 @@ describe('Verified Response Rendering', () => {
     // Submit a question
     const input = screen.getByPlaceholderText('Ask a AP Calculus AB question...');
     await user.type(input, 'What is the derivative of x²?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 
@@ -158,7 +160,7 @@ describe('Verified Response Rendering', () => {
       answer: 'I am not sure about this answer',
       verified: false,
       trustScore: 0.45,
-      confidence: 0.50,
+      confidence: 0.5,
       sources: [],
       suggestions: ['Try rephrasing your question'],
       metadata: {
@@ -175,7 +177,7 @@ describe('Verified Response Rendering', () => {
     // Submit a question
     const input = screen.getByPlaceholderText('Ask a AP Calculus AB question...');
     await user.type(input, 'What is the meaning of life?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 
@@ -198,15 +200,15 @@ describe('Verified Response Rendering', () => {
           id: 'derivative-rules',
           title: 'Derivative Rules',
           snippet: 'The derivative of x^n is nx^(n-1)',
-          score: 0.95
+          score: 0.95,
         },
         {
           type: 'retrieval' as const,
           id: 'integration-basics',
           title: 'Integration Basics',
           snippet: 'Integration is the reverse of differentiation',
-          score: 0.87
-        }
+          score: 0.87,
+        },
       ],
       suggestions: ['Try asking about the chain rule'],
       metadata: {
@@ -223,7 +225,7 @@ describe('Verified Response Rendering', () => {
     // Submit a question
     const input = screen.getByPlaceholderText('Ask a AP Calculus AB question...');
     await user.type(input, 'What is the derivative of x²?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 
@@ -244,7 +246,7 @@ describe('Verified Response Rendering', () => {
     // Verify external links have correct attributes
     const sourceLinks = screen.getAllByTestId(/source-link-/);
     expect(sourceLinks).toHaveLength(2);
-    
+
     sourceLinks.forEach(link => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -265,7 +267,7 @@ describe('Verified Response Rendering', () => {
       answer: 'The derivative of x² is 2x',
       verified: true,
       trustScore: 0.87,
-      confidence: 0.90,
+      confidence: 0.9,
       sources: [],
       suggestions: [],
       metadata: {
@@ -282,7 +284,7 @@ describe('Verified Response Rendering', () => {
     // Submit a question
     const input = screen.getByPlaceholderText('Ask a AP Calculus AB question...');
     await user.type(input, 'What is the derivative of x²?');
-    
+
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 

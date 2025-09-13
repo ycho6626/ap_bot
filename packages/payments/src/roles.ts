@@ -15,12 +15,12 @@ export interface StripePriceRoleMapping {
  */
 export function getStripePriceRoleMapping(): StripePriceRoleMapping {
   const cfg = config();
-  
+
   return {
     // Calc-specific pricing maps to calc_paid
     [cfg.STRIPE_PRICE_CALC_MONTHLY]: 'calc_paid',
     [cfg.STRIPE_PRICE_CALC_YEARLY]: 'calc_paid',
-    
+
     // All access pricing maps to all_paid
     [cfg.STRIPE_PRICE_ALL_ACCESS_MONTHLY]: 'all_paid',
     [cfg.STRIPE_PRICE_ALL_ACCESS_YEARLY]: 'all_paid',
@@ -34,7 +34,7 @@ export function getStripePriceRoleMapping(): StripePriceRoleMapping {
  */
 export function getRoleFromStripePrice(priceId: string): UserRole | null {
   const mapping = getStripePriceRoleMapping();
-  return mapping[priceId] || null;
+  return mapping[priceId] ?? null;
 }
 
 /**

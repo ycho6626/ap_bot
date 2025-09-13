@@ -31,13 +31,13 @@ export async function createServer() {
     logger: {
       level: config().LOG_LEVEL,
       serializers: {
-        req: (req) => ({
+        req: req => ({
           method: req.method,
           url: req.url,
           headers: req.headers,
           remoteAddress: req.ip,
         }),
-        res: (res) => ({
+        res: res => ({
           statusCode: res.statusCode,
         }),
       },
@@ -85,16 +85,16 @@ export async function createServer() {
       deepLinking: false,
     },
     uiHooks: {
-      onRequest: function (request, reply, next) {
+      onRequest: function (_request, _reply, next) {
         next();
       },
-      preHandler: function (request, reply, next) {
+      preHandler: function (_request, _reply, next) {
         next();
       },
     },
     staticCSP: true,
-    transformStaticCSP: (header) => header,
-    transformSpecification: (swaggerObject, request, reply) => {
+    transformStaticCSP: header => header,
+    transformSpecification: (swaggerObject, _request, _reply) => {
       return swaggerObject;
     },
     transformSpecificationClone: true,
@@ -124,7 +124,7 @@ export async function createServer() {
           headers: request.headers,
         },
       },
-      'Request error',
+      'Request error'
     );
 
     // Don't expose internal errors in production
@@ -142,7 +142,7 @@ export async function createServer() {
   });
 
   // Global request logging
-  server.addHook('onRequest', async (request, reply) => {
+  server.addHook('onRequest', async (request, _reply) => {
     logger.info(
       {
         method: request.method,
@@ -150,7 +150,7 @@ export async function createServer() {
         userAgent: request.headers['user-agent'],
         ip: request.ip,
       },
-      'Incoming request',
+      'Incoming request'
     );
   });
 
@@ -163,7 +163,7 @@ export async function createServer() {
         statusCode: reply.statusCode,
         responseTime: reply.getResponseTime(),
       },
-      'Request completed',
+      'Request completed'
     );
   });
 
@@ -187,7 +187,7 @@ export async function startServer() {
         host,
         environment: config().NODE_ENV,
       },
-      'API Gateway server started',
+      'API Gateway server started'
     );
 
     // Graceful shutdown
@@ -215,7 +215,7 @@ export async function startServer() {
 
 // Start server if this file is run directly
 if (require.main === module) {
-  startServer().catch((error) => {
+  startServer().catch(error => {
     logger.error({ error }, 'Failed to start server');
     process.exit(1);
   });

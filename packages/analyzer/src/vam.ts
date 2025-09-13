@@ -34,7 +34,7 @@ interface VAMMetrics {
   verifier_equiv_rate: number;
 }
 
-interface VAMAnalysis {
+export interface VAMAnalysis {
   overall: VAMMetrics;
   by_variant: Record<'calc_ab' | 'calc_bc', VAMMetrics>;
   by_time_period: {
@@ -169,8 +169,8 @@ function analyzeTrends(events: AnalyticsEvent[]): VAMAnalysis['trends'] {
   }
 
   // Sort events by time
-  const sortedEvents = [...events].sort((a, b) => 
-    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
 
   // Split into two halves for trend analysis
@@ -181,17 +181,19 @@ function analyzeTrends(events: AnalyticsEvent[]): VAMAnalysis['trends'] {
   const firstHalfMetrics = calculateVAMMetrics(firstHalf);
   const secondHalfMetrics = calculateVAMMetrics(secondHalf);
 
-  const verifiedShareTrend = secondHalfMetrics.verified_share > firstHalfMetrics.verified_share
-    ? 'improving'
-    : secondHalfMetrics.verified_share < firstHalfMetrics.verified_share
-    ? 'declining'
-    : 'stable';
+  const verifiedShareTrend =
+    secondHalfMetrics.verified_share > firstHalfMetrics.verified_share
+      ? 'improving'
+      : secondHalfMetrics.verified_share < firstHalfMetrics.verified_share
+        ? 'declining'
+        : 'stable';
 
-  const responseTimeTrend = secondHalfMetrics.avg_response_time_ms < firstHalfMetrics.avg_response_time_ms
-    ? 'improving'
-    : secondHalfMetrics.avg_response_time_ms > firstHalfMetrics.avg_response_time_ms
-    ? 'declining'
-    : 'stable';
+  const responseTimeTrend =
+    secondHalfMetrics.avg_response_time_ms < firstHalfMetrics.avg_response_time_ms
+      ? 'improving'
+      : secondHalfMetrics.avg_response_time_ms > firstHalfMetrics.avg_response_time_ms
+        ? 'declining'
+        : 'stable';
 
   return {
     verified_share_trend: verifiedShareTrend,
@@ -210,7 +212,7 @@ export async function analyzeVAM(
   logger.info('Starting VAM analysis', { startDate, endDate, examVariant });
 
   const events = await fetchAnalyticsEvents(startDate, endDate, examVariant);
-  
+
   if (events.length === 0) {
     logger.warn('No analytics events found for the specified criteria');
   }

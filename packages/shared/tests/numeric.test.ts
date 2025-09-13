@@ -65,7 +65,7 @@ describe('countSigFigs', () => {
     expect(countSigFigs(123)).toBe(3);
     expect(countSigFigs(123.45)).toBe(5);
     expect(countSigFigs(0.00123)).toBe(3);
-    expect(countSigFigs(1.2300)).toBe(3); // JavaScript converts to 1.23e+0
+    expect(countSigFigs(1.23)).toBe(3); // JavaScript converts to 1.23e+0
     expect(countSigFigs(1000)).toBe(1);
     expect(countSigFigs(1000.0)).toBe(1); // JavaScript converts to 1e+3
   });

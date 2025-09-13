@@ -1,166 +1,176 @@
 import { FastifyPluginAsync } from 'fastify';
-import { config } from '@ap/shared/config';
 import { createLogger } from '@ap/shared/logger';
+import { RateLimitConfigs, createRateLimitMiddleware } from '@ap/shared/rateLimit';
 
 const logger = createLogger('ratelimit-plugin');
 
 /**
  * Rate limiting plugin with different limits for different endpoints
  */
-export const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
-  // Global rate limiting
-  await fastify.register(import('@fastify/rate-limit'), {
-    max: 100, // Maximum number of requests
-    timeWindow: '1 minute', // Time window
-    keyGenerator: (request) => {
-      // Use IP address as the key, with fallback to user ID if available
-      return request.ip || 'unknown';
-    },
-    errorResponseBuilder: (request, context) => {
+export const rateLimitPlugin: FastifyPluginAsync = async fastify => {
+  logger.info('Registering rate limiting plugin');
+
+  // Global rate limiting using shared infrastructure
+  const globalRateLimit = createRateLimitMiddleware(
+    RateLimitConfigs.MODERATE,
+    (request: any) => request.ip || 'unknown'
+  );
+
+  // Apply global rate limiting to all routes
+  fastify.addHook('preHandler', async (request, reply) => {
+    try {
+      await globalRateLimit(request);
+    } catch (error) {
       logger.warn(
         {
           ip: request.ip,
           url: request.url,
           method: request.method,
-          limit: context.max,
-          remaining: context.remaining,
         },
-        'Rate limit exceeded',
+        'Global rate limit exceeded'
       );
 
-      return {
+      reply.status(429).send({
         error: {
           message: 'Too Many Requests',
           statusCode: 429,
-          limit: context.max,
-          remaining: context.remaining,
-          resetTime: context.resetTime,
+          limit: RateLimitConfigs.MODERATE.maxRequests,
         },
-      };
-    },
-    onBanReach: (request, key, totalHits, maxHits, timeWindow) => {
-      logger.warn(
-        {
-          ip: request.ip,
-          key,
-          totalHits,
-          maxHits,
-          timeWindow,
-          url: request.url,
-          method: request.method,
-        },
-        'Rate limit ban reached',
-      );
-    },
+      });
+      return;
+    }
   });
 
   // Specific rate limiting for coach endpoint (more restrictive)
-  fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.path === '/coach' && routeOptions.method === 'POST') {
-      fastify.register(import('@fastify/rate-limit'), {
-        max: 10, // 10 requests per minute for coach endpoint
-        timeWindow: '1 minute',
-        keyGenerator: (request) => {
-          // Use IP address as the key
-          return request.ip || 'unknown';
-        },
-        errorResponseBuilder: (request, context) => {
-          logger.warn(
-            {
-              ip: request.ip,
-              url: request.url,
-              method: request.method,
-              limit: context.max,
-              remaining: context.remaining,
-            },
-            'Coach endpoint rate limit exceeded',
-          );
+  const coachRateLimit = createRateLimitMiddleware(
+    RateLimitConfigs.STRICT,
+    (request: any) => `coach:${request.ip || 'unknown'}`
+  );
 
-          return {
-            error: {
-              message: 'Too Many Requests - Coach endpoint has stricter limits',
-              statusCode: 429,
-              limit: context.max,
-              remaining: context.remaining,
-              resetTime: context.resetTime,
-            },
-          };
-        },
-      });
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (request.url === '/coach' && request.method === 'POST') {
+      try {
+        await coachRateLimit(request);
+      } catch (error) {
+        logger.warn(
+          {
+            ip: request.ip,
+            url: request.url,
+            method: request.method,
+          },
+          'Coach endpoint rate limit exceeded'
+        );
+
+        reply.status(429).send({
+          error: {
+            message: 'Too Many Requests - Coach endpoint has stricter limits',
+            statusCode: 429,
+            limit: RateLimitConfigs.STRICT.maxRequests,
+          },
+        });
+        return;
+      }
     }
   });
 
   // Specific rate limiting for webhook endpoints (very permissive)
-  fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.path?.startsWith('/webhooks/')) {
-      fastify.register(import('@fastify/rate-limit'), {
-        max: 1000, // 1000 requests per minute for webhooks
-        timeWindow: '1 minute',
-        keyGenerator: (request) => {
-          // Use IP address as the key
-          return request.ip || 'unknown';
-        },
-        errorResponseBuilder: (request, context) => {
-          logger.warn(
-            {
-              ip: request.ip,
-              url: request.url,
-              method: request.method,
-              limit: context.max,
-              remaining: context.remaining,
-            },
-            'Webhook rate limit exceeded',
-          );
+  const webhookRateLimit = createRateLimitMiddleware(
+    RateLimitConfigs.LOOSE,
+    (request: any) => `webhook:${request.ip || 'unknown'}`
+  );
 
-          return {
-            error: {
-              message: 'Too Many Requests - Webhook endpoint limit exceeded',
-              statusCode: 429,
-              limit: context.max,
-              remaining: context.remaining,
-              resetTime: context.resetTime,
-            },
-          };
-        },
-      });
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (request.url?.startsWith('/webhooks/')) {
+      try {
+        await webhookRateLimit(request);
+      } catch (error) {
+        logger.warn(
+          {
+            ip: request.ip,
+            url: request.url,
+            method: request.method,
+          },
+          'Webhook rate limit exceeded'
+        );
+
+        reply.status(429).send({
+          error: {
+            message: 'Too Many Requests - Webhook endpoint',
+            statusCode: 429,
+            limit: RateLimitConfigs.LOOSE.maxRequests,
+          },
+        });
+        return;
+      }
     }
   });
 
-  // Specific rate limiting for review endpoints (moderate)
-  fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.path?.startsWith('/review/')) {
-      fastify.register(import('@fastify/rate-limit'), {
-        max: 50, // 50 requests per minute for review endpoints
-        timeWindow: '1 minute',
-        keyGenerator: (request) => {
-          // Use IP address as the key
-          return request.ip || 'unknown';
-        },
-        errorResponseBuilder: (request, context) => {
-          logger.warn(
-            {
-              ip: request.ip,
-              url: request.url,
-              method: request.method,
-              limit: context.max,
-              remaining: context.remaining,
-            },
-            'Review endpoint rate limit exceeded',
-          );
+  // Specific rate limiting for KB search endpoint (moderate)
+  const kbRateLimit = createRateLimitMiddleware(
+    RateLimitConfigs.API,
+    (request: any) => `kb:${request.ip || 'unknown'}`
+  );
 
-          return {
-            error: {
-              message: 'Too Many Requests - Review endpoint limit exceeded',
-              statusCode: 429,
-              limit: context.max,
-              remaining: context.remaining,
-              resetTime: context.resetTime,
-            },
-          };
-        },
-      });
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (request.url === '/kb/search' && request.method === 'GET') {
+      try {
+        await kbRateLimit(request);
+      } catch (error) {
+        logger.warn(
+          {
+            ip: request.ip,
+            url: request.url,
+            method: request.method,
+          },
+          'KB search rate limit exceeded'
+        );
+
+        reply.status(429).send({
+          error: {
+            message: 'Too Many Requests - KB search endpoint',
+            statusCode: 429,
+            limit: RateLimitConfigs.API.maxRequests,
+          },
+        });
+        return;
+      }
     }
   });
 
-  logger.info('Rate limiting plugin registered');
+  // Specific rate limiting for review endpoints (teacher only, moderate)
+  const reviewRateLimit = createRateLimitMiddleware(
+    {
+      windowMs: 60 * 1000, // 1 minute
+      maxRequests: 30, // 30 requests per minute for review endpoints
+    },
+    (request: any) => `review:${request.ip || 'unknown'}`
+  );
+
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (request.url?.startsWith('/review/')) {
+      try {
+        await reviewRateLimit(request);
+      } catch (error) {
+        logger.warn(
+          {
+            ip: request.ip,
+            url: request.url,
+            method: request.method,
+          },
+          'Review endpoint rate limit exceeded'
+        );
+
+        reply.status(429).send({
+          error: {
+            message: 'Too Many Requests - Review endpoint',
+            statusCode: 429,
+            limit: 30,
+          },
+        });
+        return;
+      }
+    }
+  });
+
+  logger.info('Rate limiting plugin registered successfully');
 };

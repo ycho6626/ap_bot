@@ -85,6 +85,7 @@ function analyzeByVariant(results: TestResult[]) {
 /**
  * Analyzes results by difficulty level (for golden tests)
  */
+/*
 function analyzeByDifficulty(results: TestResult[]) {
   const difficulties = ['easy', 'medium', 'hard'];
   const analysis: Record<string, any> = {};
@@ -108,6 +109,7 @@ function analyzeByDifficulty(results: TestResult[]) {
 
   return analysis;
 }
+*/
 
 /**
  * Identifies failed tests for detailed analysis

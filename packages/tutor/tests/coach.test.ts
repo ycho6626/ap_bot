@@ -8,7 +8,9 @@ vi.mock('../src/llm', () => ({
   },
   llmUtils: {
     createSystemMessage: vi.fn(() => 'System message'),
-    createUserMessage: vi.fn((question, context) => context ? `${question}\n\n${context}` : question),
+    createUserMessage: vi.fn((question, context) =>
+      context ? `${question}\n\n${context}` : question
+    ),
   },
 }));
 
@@ -67,13 +69,13 @@ describe('VAMCoach', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     coach = new VAMCoach();
-    
+
     // Get mocked instances
     const { llmClient } = await import('../src/llm');
     const { hybridRetrieval } = await import('../src/retrieval');
     const { canonicalManager } = await import('../src/canonical');
     const { verifierClient } = await import('../src/verify');
-    
+
     mockLLMClient = llmClient;
     mockHybridRetrieval = hybridRetrieval;
     mockCanonicalManager = canonicalManager;

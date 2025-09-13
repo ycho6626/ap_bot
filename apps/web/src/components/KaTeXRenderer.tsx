@@ -10,10 +10,10 @@ interface KaTeXRendererProps {
   displayMode?: boolean;
 }
 
-export function KaTeXRenderer({ 
-  content, 
-  className = '', 
-  displayMode = false 
+export function KaTeXRenderer({
+  content,
+  className = '',
+  displayMode = false,
 }: KaTeXRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +26,7 @@ export function KaTeXRenderer({
     // Split content by LaTeX expressions
     const latexRegex = /\$([^$]+)\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g;
     const parts = content.split(latexRegex);
-    const matches = content.match(latexRegex) || [];
+    const matches = content.match(latexRegex) ?? [];
 
     let partIndex = 0;
     let matchIndex = 0;
@@ -35,7 +35,7 @@ export function KaTeXRenderer({
       // Add text content
       if (parts[partIndex]) {
         const textSpan = document.createElement('span');
-        textSpan.textContent = parts[partIndex] || '';
+        textSpan.textContent = parts[partIndex] ?? '';
         textSpan.className = 'katex-text';
         container.appendChild(textSpan);
       }
@@ -45,9 +45,7 @@ export function KaTeXRenderer({
         const latexContent = matches[matchIndex];
         if (latexContent) {
           const isInline = latexContent.startsWith('$') && latexContent.endsWith('$');
-          const latexText = isInline 
-            ? latexContent.slice(1, -1) 
-            : latexContent;
+          const latexText = isInline ? latexContent.slice(1, -1) : latexContent;
 
           try {
             const rendered = katex.renderToString(latexText, {
@@ -78,10 +76,5 @@ export function KaTeXRenderer({
     }
   }, [content, displayMode]);
 
-  return (
-    <div 
-      ref={containerRef} 
-      className={`katex-container ${className}`}
-    />
-  );
+  return <div ref={containerRef} className={`katex-container ${className}`} />;
 }

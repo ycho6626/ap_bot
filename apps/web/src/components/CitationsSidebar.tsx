@@ -16,11 +16,11 @@ interface CitationsSidebarProps {
   className?: string;
 }
 
-export function CitationsSidebar({ 
-  sources, 
-  suggestions = [], 
-  onClose, 
-  className 
+export function CitationsSidebar({
+  sources,
+  suggestions = [],
+  onClose,
+  className,
 }: CitationsSidebarProps) {
   const getSourceTypeColor = (type: Source['type']) => {
     switch (type) {
@@ -51,33 +51,33 @@ export function CitationsSidebar({
   return (
     <div className={cn('w-80 bg-white border border-gray-200 rounded-lg shadow-lg', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <BookOpen className="h-5 w-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Sources & Citations</h3>
+      <div className='flex items-center justify-between p-4 border-b border-gray-200'>
+        <div className='flex items-center space-x-2'>
+          <BookOpen className='h-5 w-5 text-gray-600' />
+          <h3 className='text-lg font-semibold text-gray-900'>Sources & Citations</h3>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-          aria-label="Close citations sidebar"
+          className='p-1 hover:bg-gray-100 rounded-md transition-colors'
+          aria-label='Close citations sidebar'
         >
-          <X className="h-4 w-4 text-gray-500" />
+          <X className='h-4 w-4 text-gray-500' />
         </button>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+      <div className='p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto'>
         {/* Sources */}
         {sources.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Sources Used</h4>
-            <div className="space-y-3">
+            <h4 className='text-sm font-medium text-gray-900 mb-3'>Sources Used</h4>
+            <div className='space-y-3'>
               {sources.map((source, index) => (
                 <div
                   key={`${source.id}-${index}`}
-                  className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                  className='border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors'
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className='flex items-start justify-between mb-2'>
                     <span
                       className={cn(
                         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
@@ -86,26 +86,24 @@ export function CitationsSidebar({
                     >
                       {getSourceTypeLabel(source.type)}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className='text-xs text-gray-500'>
                       {Math.round(source.score * 100)}% match
                     </span>
                   </div>
-                  
-                  <h5 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+
+                  <h5 className='text-sm font-medium text-gray-900 mb-2 line-clamp-2'>
                     {source.title}
                   </h5>
-                  
-                  <p className="text-xs text-gray-600 mb-3 line-clamp-3">
-                    {source.snippet}
-                  </p>
-                  
+
+                  <p className='text-xs text-gray-600 mb-3 line-clamp-3'>{source.snippet}</p>
+
                   <a
                     href={`/lessons/${source.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-xs text-primary-600 hover:text-primary-700 transition-colors"
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-flex items-center text-xs text-primary-600 hover:text-primary-700 transition-colors'
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" />
+                    <ExternalLink className='h-3 w-3 mr-1' />
                     View Source
                   </a>
                 </div>
@@ -117,15 +115,12 @@ export function CitationsSidebar({
         {/* Suggestions */}
         {suggestions.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Suggestions</h4>
-            <div className="space-y-2">
+            <h4 className='text-sm font-medium text-gray-900 mb-3'>Suggestions</h4>
+            <div className='space-y-2'>
               {suggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className="flex items-start space-x-2 p-2 bg-gray-50 rounded-md"
-                >
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-sm text-gray-700">{suggestion}</p>
+                <div key={index} className='flex items-start space-x-2 p-2 bg-gray-50 rounded-md'>
+                  <div className='w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0' />
+                  <p className='text-sm text-gray-700'>{suggestion}</p>
                 </div>
               ))}
             </div>
@@ -134,9 +129,9 @@ export function CitationsSidebar({
 
         {/* Empty State */}
         {sources.length === 0 && suggestions.length === 0 && (
-          <div className="text-center py-8">
-            <BookOpen className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">
+          <div className='text-center py-8'>
+            <BookOpen className='h-8 w-8 text-gray-400 mx-auto mb-3' />
+            <p className='text-sm text-gray-500'>
               No sources or suggestions available for this response.
             </p>
           </div>

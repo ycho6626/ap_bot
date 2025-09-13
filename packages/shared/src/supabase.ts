@@ -1,11 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from './config';
-import type {
-  KbDocument,
-  KbCanonicalSolution,
-  ReviewCase,
-  UserRole,
-} from './types';
+import type { KbDocument, KbCanonicalSolution, ReviewCase, UserRole } from './types';
 
 // Database schema type definitions removed for now to simplify compilation
 
@@ -19,7 +14,7 @@ export const supabaseAnon: SupabaseClient = createClient(
     auth: {
       persistSession: false,
     },
-  },
+  }
 );
 
 /**
@@ -32,8 +27,14 @@ export const supabaseService: SupabaseClient = createClient(
     auth: {
       persistSession: false,
     },
-  },
+  }
 );
+
+/**
+ * Default Supabase client (alias for service client)
+ * @deprecated Use supabaseService or supabaseAnon explicitly
+ */
+export const supabase = supabaseService;
 
 /**
  * Get user role by user ID
@@ -60,12 +61,10 @@ export async function getUserRole(userId: string): Promise<UserRole> {
  * @param role - Role to set
  */
 export async function setUserRole(userId: string, role: UserRole): Promise<void> {
-  const { error } = await supabaseService
-    .from('user_roles')
-    .upsert({
-      user_id: userId,
-      role,
-    } as any);
+  const { error } = await supabaseService.from('user_roles').upsert({
+    user_id: userId,
+    role,
+  } as any);
 
   if (error) {
     throw new Error(`Failed to set user role: ${error.message}`);
@@ -82,7 +81,7 @@ export async function setUserRole(userId: string, role: UserRole): Promise<void>
 export async function searchKbDocuments(
   query: string,
   examVariant?: string,
-  limit = 10,
+  limit = 10
 ): Promise<KbDocument[]> {
   let queryBuilder = supabaseAnon
     .from('kb_document')
@@ -109,11 +108,7 @@ export async function searchKbDocuments(
  * @returns Document or null if not found
  */
 export async function getKbDocument(id: string): Promise<KbDocument | null> {
-  const { data, error } = await supabaseAnon
-    .from('kb_document')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabaseAnon.from('kb_document').select('*').eq('id', id).single();
 
   if (error || !data) {
     return null;
@@ -130,7 +125,7 @@ export async function getKbDocument(id: string): Promise<KbDocument | null> {
  */
 export async function insertAnalyticsEvent(
   kind: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): Promise<string> {
   const { data, error } = await supabaseAnon
     .from('analytics_event')
@@ -154,7 +149,7 @@ export async function insertAnalyticsEvent(
  * @returns Canonical solution or null if not found
  */
 export async function getCanonicalSolution(
-  problemKey: string,
+  problemKey: string
 ): Promise<KbCanonicalSolution | null> {
   const { data, error } = await supabaseService
     .from('kb_canonical_solution')
@@ -175,7 +170,7 @@ export async function getCanonicalSolution(
  * @returns Created review case ID
  */
 export async function createReviewCase(
-  reviewCase: Omit<ReviewCase, 'id' | 'created_at' | 'updated_at'>,
+  reviewCase: Omit<ReviewCase, 'id' | 'created_at' | 'updated_at'>
 ): Promise<string> {
   const { data, error } = await supabaseAnon
     .from('review_case')
@@ -196,10 +191,7 @@ export async function createReviewCase(
  * @param status - Optional status filter
  * @returns Array of review cases
  */
-export async function getReviewCases(
-  userId: string,
-  status?: string,
-): Promise<ReviewCase[]> {
+export async function getReviewCases(userId: string, status?: string): Promise<ReviewCase[]> {
   let queryBuilder = supabaseAnon
     .from('review_case')
     .select('*')
@@ -232,7 +224,7 @@ export async function updateReviewCaseStatus(
   status: string,
   actor: string,
   action: string,
-  details: Record<string, unknown> = {},
+  details: Record<string, unknown> = {}
 ): Promise<void> {
   const { error: updateError } = await supabaseService
     .from('review_case')
@@ -243,14 +235,12 @@ export async function updateReviewCaseStatus(
     throw new Error(`Failed to update review case: ${updateError.message}`);
   }
 
-  const { error: actionError } = await supabaseService
-    .from('review_action')
-    .insert({
-      case_id: caseId,
-      actor,
-      action,
-      details,
-    } as any);
+  const { error: actionError } = await supabaseService.from('review_action').insert({
+    case_id: caseId,
+    actor,
+    action,
+    details,
+  } as any);
 
   if (actionError) {
     throw new Error(`Failed to create review action: ${actionError.message}`);

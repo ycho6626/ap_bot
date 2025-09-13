@@ -1,7 +1,7 @@
 import ky from 'ky';
 import type { ExamVariant, UserRole } from '@ap/shared/types';
 
-const API_BASE_URL = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3001';
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
 const api = ky.create({
   prefixUrl: API_BASE_URL,
@@ -13,7 +13,7 @@ const api = ky.create({
   },
   hooks: {
     beforeRequest: [
-      (request) => {
+      request => {
         // Add auth token if available
         const token = localStorage.getItem('auth_token');
         if (token) {
@@ -174,24 +174,28 @@ export class ApiClient {
    * Create a Stripe checkout session for subscription
    */
   async createCheckoutSession(priceId: string): Promise<StripeCheckoutSession> {
-    return api.post('payments/checkout', { 
-      json: { priceId } 
-    }).json();
+    return api
+      .post('payments/checkout', {
+        json: { priceId },
+      })
+      .json();
   }
 
   /**
    * Get available pricing plans
    */
-  async getPricingPlans(): Promise<Array<{
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    currency: string;
-    interval: 'month' | 'year';
-    features: string[];
-    role: UserRole;
-  }>> {
+  async getPricingPlans(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+      currency: string;
+      interval: 'month' | 'year';
+      features: string[];
+      role: UserRole;
+    }>
+  > {
     return api.get('payments/plans').json();
   }
 

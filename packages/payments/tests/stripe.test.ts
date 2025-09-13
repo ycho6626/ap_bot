@@ -61,7 +61,7 @@ describe('stripe', () => {
       mockStripe.webhooks.constructEvent.mockReturnValue({ id: 'evt_123' });
 
       const result = verifyStripeSignature('payload', 'signature');
-      
+
       expect(result).toBe(true);
     });
 
@@ -71,7 +71,7 @@ describe('stripe', () => {
       });
 
       const result = verifyStripeSignature('payload', 'invalid_signature');
-      
+
       expect(result).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalled();
     });
@@ -89,7 +89,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ select: mockSelect });
 
       const result = await isWebhookEventProcessed('evt_123');
-      
+
       expect(result).toBe(true);
     });
 
@@ -104,7 +104,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ select: mockSelect });
 
       const result = await isWebhookEventProcessed('evt_123');
-      
+
       expect(result).toBe(false);
     });
 
@@ -112,13 +112,20 @@ describe('stripe', () => {
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER_ERROR', message: 'Database error' } }),
+            single: vi
+              .fn()
+              .mockResolvedValue({
+                data: null,
+                error: { code: 'OTHER_ERROR', message: 'Database error' },
+              }),
           }),
         }),
       });
       mockSupabaseService.from.mockReturnValue({ select: mockSelect });
 
-      await expect(isWebhookEventProcessed('evt_123')).rejects.toThrow('Failed to check webhook event idempotency');
+      await expect(isWebhookEventProcessed('evt_123')).rejects.toThrow(
+        'Failed to check webhook event idempotency'
+      );
     });
   });
 
@@ -131,8 +138,14 @@ describe('stripe', () => {
       });
       mockSupabaseService.from.mockReturnValue({ insert: mockInsert });
 
-      const result = await recordWebhookEvent('evt_123', 'invoice.payment_succeeded', {}, true, 200);
-      
+      const result = await recordWebhookEvent(
+        'evt_123',
+        'invoice.payment_succeeded',
+        {},
+        true,
+        200
+      );
+
       expect(result).toBe('webhook_123');
     });
 
@@ -144,8 +157,9 @@ describe('stripe', () => {
       });
       mockSupabaseService.from.mockReturnValue({ insert: mockInsert });
 
-      await expect(recordWebhookEvent('evt_123', 'invoice.payment_succeeded', {}, true, 200))
-        .rejects.toThrow('Failed to record webhook event');
+      await expect(
+        recordWebhookEvent('evt_123', 'invoice.payment_succeeded', {}, true, 200)
+      ).rejects.toThrow('Failed to record webhook event');
     });
   });
 
@@ -168,7 +182,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ upsert: mockUpsert });
 
       const result = await processInvoicePaidEvent(mockInvoice);
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.userId).toBe('cus_123');
@@ -181,7 +195,7 @@ describe('stripe', () => {
       } as any;
 
       const result = await processInvoicePaidEvent(mockInvoice);
-      
+
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(400);
       expect(result.message).toBe('Invoice does not have a valid subscription');
@@ -202,7 +216,7 @@ describe('stripe', () => {
       mockStripe.subscriptions.retrieve.mockResolvedValue(mockSubscription);
 
       const result = await processInvoicePaidEvent(mockInvoice);
-      
+
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(400);
       expect(result.message).toBe('Unknown price ID: price_unknown_999');
@@ -223,7 +237,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ upsert: mockUpsert });
 
       const result = await processSubscriptionUpdatedEvent(mockSubscription);
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.userId).toBe('cus_123');
@@ -242,7 +256,7 @@ describe('stripe', () => {
           select: vi.fn().mockResolvedValue({ data: [{ role: 'calc_paid' }], error: null }),
         }),
       });
-      mockSupabaseService.from.mockImplementation((table) => {
+      mockSupabaseService.from.mockImplementation(table => {
         if (table === 'user_roles') {
           return { upsert: mockUpsert, select: mockSelect };
         }
@@ -250,7 +264,7 @@ describe('stripe', () => {
       });
 
       const result = await processSubscriptionUpdatedEvent(mockSubscription);
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.userId).toBe('cus_123');
@@ -271,7 +285,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ select: mockSelect });
 
       const result = await processSubscriptionUpdatedEvent(mockSubscription);
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.userId).toBe('cus_123');
@@ -316,7 +330,7 @@ describe('stripe', () => {
         }),
       });
 
-      mockSupabaseService.from.mockImplementation((table) => {
+      mockSupabaseService.from.mockImplementation(table => {
         if (table === 'webhook_event') {
           return { select: mockSelect, insert: mockInsert };
         }
@@ -324,7 +338,7 @@ describe('stripe', () => {
       });
 
       const result = await processStripeWebhook('payload', 'signature');
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
     });
@@ -342,7 +356,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ insert: mockInsert });
 
       const result = await processStripeWebhook('payload', 'invalid_signature');
-      
+
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(401);
       expect(result.message).toBe('Invalid signature');
@@ -368,7 +382,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ select: mockSelect });
 
       const result = await processStripeWebhook('payload', 'signature');
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Event already processed');
@@ -402,7 +416,7 @@ describe('stripe', () => {
       mockSupabaseService.from.mockReturnValue({ select: mockSelect, insert: mockInsert });
 
       const result = await processStripeWebhook('payload', 'signature');
-      
+
       expect(result.success).toBe(true);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Unhandled event type: customer.created');

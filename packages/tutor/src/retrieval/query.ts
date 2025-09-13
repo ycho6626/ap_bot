@@ -67,8 +67,8 @@ export const CALC_TERMS = {
   MVT: ['mean value theorem', 'mean value'],
   'intermediate value theorem': ['IVT', 'intermediate value'],
   IVT: ['intermediate value theorem', 'intermediate value'],
-  'rolle\'s theorem': ['Rolle', 'Rolle\'s', 'critical point'],
-  'rolle': ['Rolle\'s theorem', 'critical point'],
+  "rolle's theorem": ['Rolle', "Rolle's", 'critical point'],
+  rolle: ["Rolle's theorem", 'critical point'],
   'fundamental theorem': ['FTC', 'fundamental theorem of calculus'],
   FTC: ['fundamental theorem', 'fundamental theorem of calculus'],
 
@@ -130,7 +130,7 @@ export const CALC_TERMS = {
   'right sum': ['riemann sum', 'right endpoint'],
   'midpoint sum': ['riemann sum', 'midpoint'],
   'trapezoidal rule': ['riemann sum', 'trapezoid'],
-  'simpson\'s rule': ['riemann sum', 'parabolic approximation'],
+  "simpson's rule": ['riemann sum', 'parabolic approximation'],
 } as const;
 
 /**
@@ -138,23 +138,61 @@ export const CALC_TERMS = {
  */
 export const VARIANT_TERMS = {
   calc_ab: [
-    'derivative', 'integral', 'limit', 'continuity', 'chain rule', 'product rule',
-    'quotient rule', 'implicit differentiation', 'related rates', 'optimization',
-    'mean value theorem', 'intermediate value theorem', 'rolle\'s theorem',
-    'fundamental theorem of calculus', 'riemann sum', 'definite integral',
-    'indefinite integral', 'antiderivative', 'u-substitution', 'area between curves',
-    'volume of revolution', 'average value', 'particle motion'
+    'derivative',
+    'integral',
+    'limit',
+    'continuity',
+    'chain rule',
+    'product rule',
+    'quotient rule',
+    'implicit differentiation',
+    'related rates',
+    'optimization',
+    'mean value theorem',
+    'intermediate value theorem',
+    "rolle's theorem",
+    'fundamental theorem of calculus',
+    'riemann sum',
+    'definite integral',
+    'indefinite integral',
+    'antiderivative',
+    'u-substitution',
+    'area between curves',
+    'volume of revolution',
+    'average value',
+    'particle motion',
   ],
   calc_bc: [
     // All AB terms plus:
-    'series', 'convergence', 'divergence', 'power series', 'taylor series',
-    'maclaurin series', 'radius of convergence', 'interval of convergence',
-    'polar coordinates', 'parametric equations', 'vector-valued functions',
-    'differential equations', 'separable', 'slope fields', 'euler\'s method',
-    'integration by parts', 'partial fractions', 'trigonometric substitution',
-    'improper integrals', 'arc length', 'surface area', 'polar area',
-    'parametric derivatives', 'parametric integrals', 'vector derivatives',
-    'vector integrals', 'unit tangent', 'unit normal', 'curvature'
+    'series',
+    'convergence',
+    'divergence',
+    'power series',
+    'taylor series',
+    'maclaurin series',
+    'radius of convergence',
+    'interval of convergence',
+    'polar coordinates',
+    'parametric equations',
+    'vector-valued functions',
+    'differential equations',
+    'separable',
+    'slope fields',
+    "euler's method",
+    'integration by parts',
+    'partial fractions',
+    'trigonometric substitution',
+    'improper integrals',
+    'arc length',
+    'surface area',
+    'polar area',
+    'parametric derivatives',
+    'parametric integrals',
+    'vector derivatives',
+    'vector integrals',
+    'unit tangent',
+    'unit normal',
+    'curvature',
   ],
 } as const;
 
@@ -206,13 +244,32 @@ export function expandQuery(query: string, examVariant: 'calc_ab' | 'calc_bc'): 
  */
 export function createSearchTerms(problem: string, examVariant: 'calc_ab' | 'calc_bc'): string[] {
   const expanded = expandQuery(problem, examVariant);
-  
+
   // Add common problem type indicators
   const problemTypes = [
-    'find', 'calculate', 'determine', 'evaluate', 'solve', 'prove', 'show',
-    'maximum', 'minimum', 'critical', 'inflection', 'concavity', 'increasing',
-    'decreasing', 'continuous', 'differentiable', 'limit', 'derivative',
-    'integral', 'area', 'volume', 'rate', 'optimization'
+    'find',
+    'calculate',
+    'determine',
+    'evaluate',
+    'solve',
+    'prove',
+    'show',
+    'maximum',
+    'minimum',
+    'critical',
+    'inflection',
+    'concavity',
+    'increasing',
+    'decreasing',
+    'continuous',
+    'differentiable',
+    'limit',
+    'derivative',
+    'integral',
+    'area',
+    'volume',
+    'rate',
+    'optimization',
   ];
 
   const terms = new Set(expanded);
@@ -233,10 +290,10 @@ export function createSearchTerms(problem: string, examVariant: 'calc_ab' | 'cal
  */
 export function boostTermsByVariant(
   terms: string[],
-  examVariant: 'calc_ab' | 'calc_bc',
+  examVariant: 'calc_ab' | 'calc_bc'
 ): Array<{ term: string; boost: number }> {
   const variantTerms = VARIANT_TERMS[examVariant];
-  
+
   return terms.map(term => {
     const lowerTerm = term.toLowerCase();
     let boost = 1.0;
@@ -271,7 +328,7 @@ export function boostTermsByVariant(
  */
 export function extractMathExpressions(text: string): string[] {
   const expressions: string[] = [];
-  
+
   // Common mathematical patterns
   const patterns = [
     // Functions

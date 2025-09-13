@@ -8,20 +8,23 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'AP Calculus Tutor - Verified Answers',
-  description: 'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
+  description:
+    'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
   keywords: ['AP Calculus', 'tutor', 'verified answers', 'AB', 'BC', 'mathematics'],
   authors: [{ name: 'AP Bot Team' }],
   robots: 'index, follow',
   openGraph: {
     title: 'AP Calculus Tutor - Verified Answers',
-    description: 'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
+    description:
+      'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
     type: 'website',
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AP Calculus Tutor - Verified Answers',
-    description: 'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
+    description:
+      'Get verified answers to your AP Calculus AB/BC questions with step-by-step solutions and explanations.',
   },
 };
 
@@ -30,19 +33,13 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang='en' className='h-full'>
       <body className={`${inter.className} h-full`}>
-        <div className="min-h-full">
-          {children}
-        </div>
+        <div className='min-h-full'>{children}</div>
         <Toaster
-          position="top-right"
+          position='top-right'
           toastOptions={{
             duration: 4000,
             style: {

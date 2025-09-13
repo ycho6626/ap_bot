@@ -55,7 +55,7 @@ export class CanonicalManager {
    */
   async findBestCanonical(
     query: string,
-    options: CanonicalSearchOptions = {},
+    options: CanonicalSearchOptions = {}
   ): Promise<CanonicalResult | null> {
     const {
       examVariant = 'calc_ab',
@@ -68,7 +68,7 @@ export class CanonicalManager {
 
     this.logger.debug(
       { query, examVariant, topic, subtopic, difficulty },
-      'Finding best canonical solution',
+      'Finding best canonical solution'
     );
 
     try {
@@ -78,11 +78,11 @@ export class CanonicalManager {
         limit: limit || 10,
         minScore,
       };
-      
+
       if (topic) searchOptions.topic = topic;
       if (subtopic) searchOptions.subtopic = subtopic;
       if (difficulty) searchOptions.difficulty = difficulty;
-      
+
       const candidates = await this.searchCanonicalSolutions(query, searchOptions);
 
       if (candidates.length === 0) {
@@ -92,27 +92,27 @@ export class CanonicalManager {
 
       // Select the best candidate
       const best = candidates[0];
-      
+
       if (!best) {
         this.logger.debug({ query }, 'No canonical solutions found');
         return null;
       }
-      
+
       this.logger.debug(
-        { 
-          query, 
+        {
+          query,
           solutionId: best.solution.id,
           score: best.score,
           relevance: best.relevance,
         },
-        'Found best canonical solution',
+        'Found best canonical solution'
       );
 
       return best;
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Failed to find canonical solution',
+        'Failed to find canonical solution'
       );
       throw error;
     }
@@ -126,7 +126,7 @@ export class CanonicalManager {
    */
   private async searchCanonicalSolutions(
     query: string,
-    options: CanonicalSearchOptions,
+    options: CanonicalSearchOptions
   ): Promise<CanonicalResult[]> {
     return traceDatabaseOperation(
       'search_canonical_solutions',
@@ -137,10 +137,12 @@ export class CanonicalManager {
         // Build the query
         let queryBuilder = supabaseService
           .from('kb_canonical_solution')
-          .select(`
+          .select(
+            `
             *,
             kb_canonical_embedding!inner(embedding)
-          `)
+          `
+          )
           .eq('subject', 'calc')
           .limit(limit || 10);
 
@@ -174,7 +176,7 @@ export class CanonicalManager {
         const results = (data || []).map(solution => {
           const relevance = this.calculateRelevance(solution, query, examVariant || 'calc_ab');
           const score = this.calculateScore(solution, query, examVariant || 'calc_ab');
-          
+
           return {
             solution,
             score,
@@ -192,7 +194,7 @@ export class CanonicalManager {
         return results
           .filter(result => result.score >= (minScore || 0))
           .sort((a, b) => b.relevance - a.relevance);
-      },
+      }
     );
   }
 
@@ -206,7 +208,7 @@ export class CanonicalManager {
   private calculateRelevance(
     solution: KbCanonicalSolution,
     query: string,
-    examVariant: 'calc_ab' | 'calc_bc',
+    examVariant: 'calc_ab' | 'calc_bc'
   ): number {
     let relevance = 0;
 
@@ -215,7 +217,7 @@ export class CanonicalManager {
     const questionLower = solution.question_template.toLowerCase();
     const answerLower = solution.final_answer.toLowerCase();
     const contentLower = `${questionLower} ${answerLower}`;
-    
+
     // Check for exact matches
     if (contentLower.includes(queryLower)) {
       relevance += 0.5;
@@ -224,7 +226,7 @@ export class CanonicalManager {
     // Check for keyword matches
     const queryWords = queryLower.split(/\s+/);
     const contentWords = contentLower.split(/\s+/);
-    const matchingWords = queryWords.filter(word => 
+    const matchingWords = queryWords.filter(word =>
       contentWords.some((contentWord: string) => contentWord.includes(word))
     );
     relevance += (matchingWords.length / queryWords.length) * 0.3;
@@ -249,27 +251,27 @@ export class CanonicalManager {
   private calculateScore(
     solution: KbCanonicalSolution,
     query: string,
-    examVariant: 'calc_ab' | 'calc_bc',
+    examVariant: 'calc_ab' | 'calc_bc'
   ): number {
     const relevance = this.calculateRelevance(solution, query, examVariant);
-    
+
     // Quality factors
     let quality = 1.0;
-    
+
     // Prefer solutions with more steps
     if (solution.steps.length > 3) {
       quality += 0.1;
     }
-    
+
     // Prefer solutions with detailed work
     const totalWork = solution.steps.reduce((sum, step) => sum + step.work.length, 0);
     if (totalWork > 200) {
       quality += 0.1;
     }
-    
+
     // Prefer solutions with justifications
-    const hasJustification = solution.steps.some(step => 
-      step.description.includes('because') || step.description.includes('since')
+    const hasJustification = solution.steps.some(
+      step => step.description.includes('because') || step.description.includes('since')
     );
     if (hasJustification) {
       quality += 0.1;
@@ -287,7 +289,7 @@ export class CanonicalManager {
     const steps: FormattedStep[] = [];
 
     // Use the structured steps from the solution
-    solution.steps.forEach((step) => {
+    solution.steps.forEach(step => {
       const justification = this.extractJustification(step.description);
       const theorem = this.extractTheorem(step.description);
 
@@ -311,7 +313,6 @@ export class CanonicalManager {
 
     return steps;
   }
-
 
   /**
    * Extract justification from step text
@@ -343,12 +344,12 @@ export class CanonicalManager {
     const theorems = [
       'Mean Value Theorem',
       'Intermediate Value Theorem',
-      'Rolle\'s Theorem',
+      "Rolle's Theorem",
       'Fundamental Theorem of Calculus',
       'Chain Rule',
       'Product Rule',
       'Quotient Rule',
-      'L\'Hôpital\'s Rule',
+      "L'Hôpital's Rule",
       'Squeeze Theorem',
     ];
 
@@ -367,27 +368,23 @@ export class CanonicalManager {
    * @returns Canonical solution or null
    */
   async getCanonicalById(id: string): Promise<KbCanonicalSolution | null> {
-    return traceDatabaseOperation(
-      'get_canonical_by_id',
-      'kb_canonical_solution',
-      async () => {
-        const { data, error } = await supabaseService
-          .from('kb_canonical_solution')
-          .select('*')
-          .eq('id', id)
-          .eq('subject', 'calc')
-          .single();
+    return traceDatabaseOperation('get_canonical_by_id', 'kb_canonical_solution', async () => {
+      const { data, error } = await supabaseService
+        .from('kb_canonical_solution')
+        .select('*')
+        .eq('id', id)
+        .eq('subject', 'calc')
+        .single();
 
-        if (error) {
-          if (error.code === 'PGRST116') {
-            return null; // Not found
-          }
-          throw new Error(`Failed to get canonical solution: ${error.message}`);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Not found
         }
+        throw new Error(`Failed to get canonical solution: ${error.message}`);
+      }
 
-        return data;
-      },
-    );
+      return data;
+    });
   }
 
   /**
@@ -396,10 +393,7 @@ export class CanonicalManager {
    * @param limit - Maximum number of related solutions
    * @returns Array of related solutions
    */
-  async getRelatedCanonical(
-    solution: KbCanonicalSolution,
-    limit = 3,
-  ): Promise<CanonicalResult[]> {
+  async getRelatedCanonical(solution: KbCanonicalSolution, limit = 3): Promise<CanonicalResult[]> {
     const options: CanonicalSearchOptions = {
       examVariant: solution.exam_variant || 'calc_ab',
       limit,

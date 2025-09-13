@@ -10,8 +10,8 @@ vi.mock('@ap/shared', () => {
         checks: [],
         overallConfidence: 0.95,
         normalizedAnswer: '2x',
-      })
-    })
+      }),
+    }),
   };
 
   return {
@@ -413,11 +413,7 @@ describe('VerifierClient', () => {
 
   describe('calculateConsistencyScore', () => {
     it('should calculate consistency score', () => {
-      const checks = [
-        { confidence: 0.9 },
-        { confidence: 0.8 },
-        { confidence: 0.85 },
-      ];
+      const checks = [{ confidence: 0.9 }, { confidence: 0.8 }, { confidence: 0.85 }];
 
       const score = (client as any).calculateConsistencyScore(checks);
 
@@ -431,11 +427,7 @@ describe('VerifierClient', () => {
       const reliableResponse = {
         ok: true,
         overallConfidence: 0.9,
-        checks: [
-          { passed: true },
-          { passed: true },
-          { passed: true },
-        ],
+        checks: [{ passed: true }, { passed: true }, { passed: true }],
       };
 
       expect(client.isReliable(reliableResponse)).toBe(true);
@@ -457,11 +449,7 @@ describe('VerifierClient', () => {
       const response = {
         ok: true,
         overallConfidence: 0.9,
-        checks: [
-          { passed: true },
-          { passed: true },
-          { passed: false },
-        ],
+        checks: [{ passed: true }, { passed: true }, { passed: false }],
       };
 
       const summary = client.getVerificationSummary(response);

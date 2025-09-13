@@ -23,9 +23,9 @@ describe('RoleGuard', () => {
   it('should render children when user has required role', async () => {
     const token = createMockJwtToken({ role: 'teacher' });
     mockLocalStorage.getItem.mockReturnValue(token);
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -37,9 +37,9 @@ describe('RoleGuard', () => {
   it('should show access denied for insufficient role', async () => {
     const token = createMockJwtToken({ role: 'public' });
     mockLocalStorage.getItem.mockReturnValue(token);
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -50,9 +50,9 @@ describe('RoleGuard', () => {
 
   it('should show teacher sign-in required for no token', async () => {
     mockLocalStorage.getItem.mockReturnValue(null);
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -64,9 +64,9 @@ describe('RoleGuard', () => {
   it('should allow higher roles to access', async () => {
     const token = createMockJwtToken({ role: 'all_paid' });
     mockLocalStorage.getItem.mockReturnValue(token);
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -76,12 +76,9 @@ describe('RoleGuard', () => {
 
   it('should render custom fallback when provided', async () => {
     mockLocalStorage.getItem.mockReturnValue(null);
-    
+
     render(
-      <RoleGuard 
-        requiredRole="teacher" 
-        fallback={<div>Custom Access Denied</div>}
-      >
+      <RoleGuard requiredRole='teacher' fallback={<div>Custom Access Denied</div>}>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -91,9 +88,9 @@ describe('RoleGuard', () => {
 
   it('should show error for invalid token', async () => {
     mockLocalStorage.getItem.mockReturnValue('invalid-token');
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );
@@ -103,14 +100,14 @@ describe('RoleGuard', () => {
   });
 
   it('should show error for expired token', async () => {
-    const expiredToken = createMockJwtToken({ 
+    const expiredToken = createMockJwtToken({
       role: 'teacher',
-      exp: Math.floor(Date.now() / 1000) - 3600 // 1 hour ago
+      exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
     });
     mockLocalStorage.getItem.mockReturnValue(expiredToken);
-    
+
     render(
-      <RoleGuard requiredRole="teacher">
+      <RoleGuard requiredRole='teacher'>
         <div>Protected Content</div>
       </RoleGuard>
     );

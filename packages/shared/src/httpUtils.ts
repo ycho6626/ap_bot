@@ -9,9 +9,11 @@
  */
 export function isTimeoutError(error: unknown): boolean {
   if (error instanceof Error) {
-    return error.message.includes('timeout') || 
-           error.message.includes('TIMEOUT') ||
-           error.name === 'TimeoutError';
+    return (
+      error.message.includes('timeout') ||
+      error.message.includes('TIMEOUT') ||
+      error.name === 'TimeoutError'
+    );
   }
   return false;
 }
@@ -23,11 +25,13 @@ export function isTimeoutError(error: unknown): boolean {
  */
 export function isNetworkError(error: unknown): boolean {
   if (error instanceof Error) {
-    return error.message.includes('network') ||
-           error.message.includes('NETWORK') ||
-           error.message.includes('ECONNREFUSED') ||
-           error.message.includes('ENOTFOUND') ||
-           error.message.includes('ECONNRESET');
+    return (
+      error.message.includes('network') ||
+      error.message.includes('NETWORK') ||
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('ECONNRESET')
+    );
   }
   return false;
 }
@@ -39,7 +43,11 @@ export function isNetworkError(error: unknown): boolean {
  * @param maxDelay - Maximum delay in milliseconds
  * @returns Delay in milliseconds
  */
-export function getRetryDelay(attempt: number, baseDelay: number = 1000, maxDelay: number = 10000): number {
+export function getRetryDelay(
+  attempt: number,
+  baseDelay: number = 1000,
+  maxDelay: number = 10000
+): number {
   const delay = baseDelay * Math.pow(2, attempt);
   return Math.min(delay, maxDelay);
 }
@@ -54,17 +62,17 @@ export function isRetryableStatus(status: number): boolean {
   if (status >= 500 && status < 600) {
     return true;
   }
-  
+
   // 429 rate limit is retryable
   if (status === 429) {
     return true;
   }
-  
+
   // 408 timeout is retryable
   if (status === 408) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -104,7 +112,7 @@ export function getStatusMessage(status: number): string {
     503: 'Service Unavailable',
     504: 'Gateway Timeout',
   };
-  
+
   return statusMessages[status] || `HTTP ${status}`;
 }
 
@@ -120,17 +128,17 @@ export function shouldRetry(error: unknown, attempt: number, maxAttempts: number
   if (attempt >= maxAttempts) {
     return false;
   }
-  
+
   // Retry on timeout errors
   if (isTimeoutError(error)) {
     return true;
   }
-  
+
   // Retry on network errors
   if (isNetworkError(error)) {
     return true;
   }
-  
+
   // Retry on retryable HTTP status codes
   if (error && typeof error === 'object' && 'status' in error) {
     const status = (error as any).status;
@@ -138,6 +146,6 @@ export function shouldRetry(error: unknown, attempt: number, maxAttempts: number
       return true;
     }
   }
-  
+
   return false;
 }

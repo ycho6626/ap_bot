@@ -1,6 +1,6 @@
 /**
  * @ap/payments - Stripe payment processing for AP Calculus bot
- * 
+ *
  * This package provides:
  * - Stripe price ID to user role mapping
  * - Webhook signature verification and idempotency

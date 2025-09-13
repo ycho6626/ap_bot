@@ -38,7 +38,7 @@ export class LLMError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly retryable: boolean = false,
+    public readonly retryable: boolean = false
   ) {
     super(message);
     this.name = 'LLMError';
@@ -66,13 +66,7 @@ export class LLMClient {
    * @returns Completion result
    */
   async complete(options: CompletionOptions): Promise<CompletionResult> {
-    const {
-      system,
-      messages,
-      maxTokens = 4000,
-      temperature = 0.1,
-      model = 'gpt-5',
-    } = options;
+    const { system, messages, maxTokens = 4000, temperature = 0.1, model = 'gpt-5' } = options;
 
     const allMessages = system
       ? [{ role: 'system' as const, content: system }, ...messages]
@@ -91,22 +85,22 @@ export class LLMClient {
    * @param options - Completion options with model
    * @returns Completion result
    */
-  private async completeWithFallback(options: CompletionOptions & { model: string }): Promise<CompletionResult> {
+  private async completeWithFallback(
+    options: CompletionOptions & { model: string }
+  ): Promise<CompletionResult> {
     const models = [options.model, ...this.fallbackModels];
-    
+
     for (const model of models) {
       try {
-        return await traceLlmOperation(
-          'complete',
-          model,
-          () => this.completeWithModel({ ...options, model }),
+        return await traceLlmOperation('complete', model, () =>
+          this.completeWithModel({ ...options, model })
         );
       } catch (error) {
         this.logger.warn(
           { model, error: error instanceof Error ? error.message : String(error) },
-          `Model ${model} failed, trying next fallback`,
+          `Model ${model} failed, trying next fallback`
         );
-        
+
         if (model === models[models.length - 1]) {
           // Last model failed, re-throw the error
           throw error;
@@ -122,7 +116,9 @@ export class LLMClient {
    * @param options - Completion options
    * @returns Completion result
    */
-  private async completeWithModel(options: CompletionOptions & { model: string }): Promise<CompletionResult> {
+  private async completeWithModel(
+    options: CompletionOptions & { model: string }
+  ): Promise<CompletionResult> {
     const { messages, maxTokens, temperature, model } = options;
 
     try {
@@ -155,17 +151,13 @@ export class LLMClient {
         throw new LLMError(
           `OpenAI API error: ${error.message}`,
           error.code || 'API_ERROR',
-          retryable,
+          retryable
         );
       }
-      
+
       if (error instanceof Error) {
         const retryable = httpUtils.isTimeoutError(error) || httpUtils.isNetworkError(error);
-        throw new LLMError(
-          `LLM request failed: ${error.message}`,
-          'REQUEST_FAILED',
-          retryable,
-        );
+        throw new LLMError(`LLM request failed: ${error.message}`, 'REQUEST_FAILED', retryable);
       }
 
       throw new LLMError('Unknown error occurred', 'UNKNOWN_ERROR');
@@ -215,7 +207,7 @@ export class LLMClient {
     } catch (error) {
       this.logger.error(
         { content: result.content, error: error instanceof Error ? error.message : String(error) },
-        'Failed to parse JSON response',
+        'Failed to parse JSON response'
       );
       throw new LLMError('Invalid JSON response', 'INVALID_JSON');
     }
@@ -227,10 +219,7 @@ export class LLMClient {
    * @param maxRetries - Maximum number of retries
    * @returns Completion result
    */
-  async completeWithRetry(
-    options: CompletionOptions,
-    maxRetries = 3,
-  ): Promise<CompletionResult> {
+  async completeWithRetry(options: CompletionOptions, maxRetries = 3): Promise<CompletionResult> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -250,7 +239,7 @@ export class LLMClient {
         const delay = httpUtils.getRetryDelay(attempt, 1000, 10000);
         this.logger.warn(
           { attempt, delay, error: lastError.message },
-          'Retrying LLM request after delay',
+          'Retrying LLM request after delay'
         );
 
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -274,7 +263,7 @@ export class LLMClient {
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        'Failed to get available models',
+        'Failed to get available models'
       );
       return this.fallbackModels;
     }
@@ -292,7 +281,7 @@ export class LLMClient {
     } catch (error) {
       this.logger.warn(
         { model, error: error instanceof Error ? error.message : String(error) },
-        'Failed to check model availability, assuming available',
+        'Failed to check model availability, assuming available'
       );
       return true;
     }
@@ -348,7 +337,8 @@ Always be encouraging and help students understand the underlying concepts, not 
    */
   extractMathExpressions(text: string): string[] {
     // Simple regex to find mathematical expressions
-    const mathRegex = /[a-zA-Z]\s*[=<>≤≥]\s*[^a-zA-Z\n]+|[a-zA-Z]\s*\([^)]+\)|[0-9]+\s*[+\-*/^]\s*[0-9]+/g;
+    const mathRegex =
+      /[a-zA-Z]\s*[=<>≤≥]\s*[^a-zA-Z\n]+|[a-zA-Z]\s*\([^)]+\)|[0-9]+\s*[+\-*/^]\s*[0-9]+/g;
     return text.match(mathRegex) || [];
   },
 
@@ -362,7 +352,7 @@ Always be encouraging and help students understand the underlying concepts, not 
     const hasMathContent = /[0-9]+\s*[+\-*/^=<>≤≥]\s*[0-9]+/.test(text);
     const hasVariables = /[a-zA-Z]\s*[=<>≤≥]/.test(text);
     const hasFunctions = /[a-zA-Z]\s*\([^)]+\)/.test(text);
-    
+
     return hasMathContent || hasVariables || hasFunctions;
   },
 };

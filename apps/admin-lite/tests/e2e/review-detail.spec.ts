@@ -39,9 +39,9 @@ test.describe('Review Case Detail', () => {
     };
 
     // Mock API responses
-    await page.route('**/review*', async (route) => {
+    await page.route('**/review*', async route => {
       const url = route.request().url();
-      
+
       if (url.includes('review?') && route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -70,26 +70,26 @@ test.describe('Review Case Detail', () => {
     });
 
     await page.goto('/review');
-    
+
     // Click on the case to select it
     await page.click('text=What is the derivative of');
-    
+
     // Check that detail panel shows
     await expect(page.locator('text=Question')).toBeVisible();
     await expect(page.locator('text=Generated Answer')).toBeVisible();
     await expect(page.locator('text=Metadata')).toBeVisible();
     await expect(page.locator('text=Sources')).toBeVisible();
-    
+
     // Check case content
     await expect(page.locator('text=What is the derivative of')).toBeVisible();
     await expect(page.locator('text=The derivative of')).toBeVisible();
-    
+
     // Check metadata
     await expect(page.locator('text=Trust Score:')).toBeVisible();
     await expect(page.locator('text=85.0%')).toBeVisible();
     await expect(page.locator('text=Confidence:')).toBeVisible();
     await expect(page.locator('text=92.0%')).toBeVisible();
-    
+
     // Check sources
     await expect(page.locator('text=CANONICAL')).toBeVisible();
     await expect(page.locator('text=Power Rule')).toBeVisible();
@@ -111,9 +111,9 @@ test.describe('Review Case Detail', () => {
     };
 
     // Mock API responses
-    await page.route('**/review*', async (route) => {
+    await page.route('**/review*', async route => {
       const url = route.request().url();
-      
+
       if (url.includes('review?') && route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -142,13 +142,13 @@ test.describe('Review Case Detail', () => {
     });
 
     await page.goto('/review');
-    
+
     // Click on the case to select it
     await page.click('text=What is the derivative of');
-    
+
     // Click approve button
     await page.click('button:has-text("Approve")');
-    
+
     // Check that resolve form appears
     await expect(page.locator('text=Approve Case')).toBeVisible();
     await expect(page.locator('text=Mark this case as approved')).toBeVisible();
@@ -175,9 +175,9 @@ test.describe('Review Case Detail', () => {
     let resolveCallCount = 0;
 
     // Mock API responses
-    await page.route('**/review*', async (route) => {
+    await page.route('**/review*', async route => {
       const url = route.request().url();
-      
+
       if (url.includes('review?') && route.request().method() === 'GET') {
         // After resolution, return empty list
         const cases = resolveCallCount > 0 ? [] : [mockCase];
@@ -209,22 +209,22 @@ test.describe('Review Case Detail', () => {
     });
 
     await page.goto('/review');
-    
+
     // Click on the case to select it
     await page.click('text=What is the derivative of');
-    
+
     // Click approve button
     await page.click('button:has-text("Approve")');
-    
+
     // Fill in feedback
     await page.fill('textarea[id="feedback"]', 'This is a good answer.');
-    
+
     // Submit the form
     await page.click('button:has-text("Approve")');
-    
+
     // Should show success message
     await expect(page.locator('text=Case approved successfully')).toBeVisible();
-    
+
     // Detail panel should close
     await expect(page.locator('text=Select a case to view details')).toBeVisible();
   });
@@ -245,9 +245,9 @@ test.describe('Review Case Detail', () => {
     };
 
     // Mock API responses
-    await page.route('**/review*', async (route) => {
+    await page.route('**/review*', async route => {
       const url = route.request().url();
-      
+
       if (url.includes('review?') && route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -266,16 +266,16 @@ test.describe('Review Case Detail', () => {
     });
 
     await page.goto('/review');
-    
+
     // Click on the case to select it
     await page.click('text=What is the derivative of');
-    
+
     // Test reject form
     await page.click('button:has-text("Reject")');
     await expect(page.locator('text=Reject Case')).toBeVisible();
     await expect(page.locator('text=Mark this case as rejected')).toBeVisible();
     await page.click('button:has-text("Cancel")');
-    
+
     // Test revision form
     await page.click('button:has-text("Revise")');
     await expect(page.locator('text=Request Revision')).toBeVisible();

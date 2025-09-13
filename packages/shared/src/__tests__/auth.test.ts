@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   parseJwtToken,
   hasRequiredRole,
@@ -131,7 +131,7 @@ describe('hasRequiredRole', () => {
 
   it('should handle all role combinations', () => {
     const roles: UserRole[] = ['public', 'calc_paid', 'teacher', 'all_paid'];
-    
+
     for (let i = 0; i < roles.length; i++) {
       for (let j = 0; j < roles.length; j++) {
         const userRole = roles[i];
@@ -147,14 +147,14 @@ describe('extractTokenFromHeader', () => {
   it('should extract token from Bearer header', () => {
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
     const header = `Bearer ${token}`;
-    
+
     expect(extractTokenFromHeader(header)).toBe(token);
   });
 
   it('should handle case insensitive Bearer', () => {
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
     const header = `bearer ${token}`;
-    
+
     expect(extractTokenFromHeader(header)).toBe(token);
   });
 
@@ -170,7 +170,7 @@ describe('extractTokenFromHeader', () => {
   it('should handle extra whitespace', () => {
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
     const header = `  Bearer   ${token}  `;
-    
+
     expect(extractTokenFromHeader(header)).toBe(token);
   });
 });
@@ -178,10 +178,10 @@ describe('extractTokenFromHeader', () => {
 describe('createMockJwtToken', () => {
   it('should create valid mock token with default values', () => {
     const token = createMockJwtToken({});
-    
+
     expect(typeof token).toBe('string');
     expect(token.split('.')).toHaveLength(3);
-    
+
     const result = parseJwtToken(token);
     expect(result.isValid).toBe(true);
     expect(result.payload?.sub).toBe('test-user');
@@ -230,7 +230,7 @@ describe('createMockJwtToken', () => {
   it('should create token with future expiration', () => {
     const futureExp = Math.floor(Date.now() / 1000) + 7200; // 2 hours from now
     const token = createMockJwtToken({ exp: futureExp });
-    
+
     const result = parseJwtToken(token);
     expect(result.isValid).toBe(true);
     expect(result.payload?.exp).toBe(futureExp);

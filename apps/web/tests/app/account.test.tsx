@@ -213,10 +213,10 @@ describe('AccountPage', () => {
 
     const upgradeButton = screen.getByText('Upgrade Now');
     expect(upgradeButton).toBeInTheDocument();
-    
+
     // Check if button is enabled
     expect(upgradeButton).not.toBeDisabled();
-    
+
     fireEvent.click(upgradeButton);
 
     // Wait for the async operation
@@ -256,7 +256,11 @@ describe('AccountPage', () => {
     render(<AccountPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('No billing information available. Upgrade to a paid plan to see billing details.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'No billing information available. Upgrade to a paid plan to see billing details.'
+        )
+      ).toBeInTheDocument();
     });
   });
 

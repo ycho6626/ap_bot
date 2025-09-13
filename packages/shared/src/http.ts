@@ -12,11 +12,7 @@ import type { HttpClientOptions } from './types';
 export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
   const logger = createLogger('http-client');
 
-  const {
-    timeout = 30000,
-    retries = 3,
-    headers = {},
-  } = options;
+  const { timeout = 30000, retries = 3, headers = {} } = options;
 
   return ky.create({
     timeout,
@@ -28,7 +24,7 @@ export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
     },
     hooks: {
       beforeRequest: [
-        (request) => {
+        request => {
           // Add default headers
           Object.entries(headers).forEach(([key, value]) => {
             request.headers.set(key, value);
@@ -40,9 +36,9 @@ export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
               {
                 url: request.url,
                 method: request.method,
-                headers: Object.fromEntries(request.headers.entries()),
+                headers: request.headers.toString(),
               },
-              'Making HTTP request',
+              'Making HTTP request'
             );
           });
         },
@@ -56,7 +52,7 @@ export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
               retryCount,
               error: error.message,
             },
-            'HTTP request failed, retrying',
+            'HTTP request failed, retrying'
           );
         },
       ],
@@ -69,12 +65,12 @@ export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
               status: response.status,
               statusText: response.statusText,
             },
-            'HTTP request completed',
+            'HTTP request completed'
           );
         },
       ],
       beforeError: [
-        (error) => {
+        error => {
           logger.error(
             {
               url: error.request?.url,
@@ -83,7 +79,7 @@ export function createHttpClient(options: HttpClientOptions = {}): KyInstance {
               statusText: error.response?.statusText,
               message: error.message,
             },
-            'HTTP request failed',
+            'HTTP request failed'
           );
           return error;
         },
@@ -105,7 +101,7 @@ export const httpClient = createHttpClient();
  */
 export function createAuthenticatedClient(
   apiKey: string,
-  options: HttpClientOptions = {},
+  options: HttpClientOptions = {}
 ): KyInstance {
   return createHttpClient({
     ...options,
@@ -141,7 +137,7 @@ export function createSupabaseClient(options: HttpClientOptions = {}): KyInstanc
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'apikey': config().SUPABASE_ANON_KEY,
+      apikey: config().SUPABASE_ANON_KEY,
       ...options.headers,
     },
   });
@@ -154,7 +150,7 @@ export function createSupabaseClient(options: HttpClientOptions = {}): KyInstanc
  */
 export function createVerifierClient(options: HttpClientOptions = {}): KyInstance {
   const baseUrl = config().VERIFIER_URL;
-  
+
   return createHttpClient({
     ...options,
     headers: {
@@ -176,10 +172,11 @@ export const httpUtils = {
    * @returns True if it's a timeout error
    */
   isTimeoutError: (error: unknown): boolean => {
-    return error instanceof Error && (
-      error.name === 'TimeoutError' ||
-      error.message.includes('timeout') ||
-      error.message.includes('ETIMEDOUT')
+    return (
+      error instanceof Error &&
+      (error.name === 'TimeoutError' ||
+        error.message.includes('timeout') ||
+        error.message.includes('ETIMEDOUT'))
     );
   },
 
@@ -189,11 +186,12 @@ export const httpUtils = {
    * @returns True if it's a network error
    */
   isNetworkError: (error: unknown): boolean => {
-    return error instanceof Error && (
-      error.name === 'NetworkError' ||
-      error.message.includes('network') ||
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('ENOTFOUND')
+    return (
+      error instanceof Error &&
+      (error.name === 'NetworkError' ||
+        error.message.includes('network') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ENOTFOUND'))
     );
   },
 

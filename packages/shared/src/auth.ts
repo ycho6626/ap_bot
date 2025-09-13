@@ -34,7 +34,7 @@ export function parseJwtToken(token: string): AuthResult {
   try {
     // Remove 'Bearer ' prefix if present
     const cleanToken = token.replace(/^Bearer\s+/i, '');
-    
+
     // Split token into parts
     const parts = cleanToken.split('.');
     if (parts.length !== 3) {

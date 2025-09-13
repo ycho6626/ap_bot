@@ -7,7 +7,7 @@ describe('config', () => {
   beforeEach(() => {
     // Reset config instance
     resetConfig();
-    
+
     // Set up test environment variables
     process.env = {
       ...originalEnv,
@@ -39,7 +39,7 @@ describe('config', () => {
   describe('getConfig', () => {
     it('should return valid configuration with all required fields', () => {
       const config = getConfig();
-      
+
       expect(config.SUPABASE_URL).toBe('https://test.supabase.co');
       expect(config.SUPABASE_ANON_KEY).toBe('test-anon-key');
       expect(config.SUPABASE_SERVICE_KEY).toBe('test-service-key');
@@ -70,7 +70,7 @@ describe('config', () => {
       delete process.env.LOG_LEVEL;
 
       const config = getConfig();
-      
+
       expect(config.VERIFIER_URL).toBe('http://localhost:8000');
       expect(config.VAM_MIN_TRUST).toBe(0.92);
       expect(config.REDIS_URL).toBeUndefined();
@@ -87,7 +87,7 @@ describe('config', () => {
       process.env.VAM_MIN_TRUST = '0.95';
 
       const config = getConfig();
-      
+
       expect(config.PORT).toBe(8080);
       expect(config.API_PORT).toBe(8081);
       expect(config.VAM_MIN_TRUST).toBe(0.95);
@@ -97,7 +97,7 @@ describe('config', () => {
       process.env.CORS_ORIGINS = 'https://example.com,https://app.example.com';
 
       const config = getConfig();
-      
+
       expect(config.CORS_ORIGINS).toEqual(['https://example.com', 'https://app.example.com']);
     });
 
@@ -154,7 +154,7 @@ describe('config', () => {
     it('should return the same instance on multiple calls', () => {
       const config1 = config();
       const config2 = config();
-      
+
       expect(config1).toBe(config2);
     });
 
@@ -162,7 +162,7 @@ describe('config', () => {
       const config1 = config();
       resetConfig();
       const config2 = config();
-      
+
       expect(config1).not.toBe(config2);
     });
   });
@@ -171,7 +171,7 @@ describe('config', () => {
     it('should detect development environment', () => {
       process.env.NODE_ENV = 'development';
       resetConfig();
-      
+
       expect(isDevelopment()).toBe(true);
       expect(isProduction()).toBe(false);
       expect(isTest()).toBe(false);
@@ -180,7 +180,7 @@ describe('config', () => {
     it('should detect production environment', () => {
       process.env.NODE_ENV = 'production';
       resetConfig();
-      
+
       expect(isDevelopment()).toBe(false);
       expect(isProduction()).toBe(true);
       expect(isTest()).toBe(false);
@@ -189,7 +189,7 @@ describe('config', () => {
     it('should detect test environment', () => {
       process.env.NODE_ENV = 'test';
       resetConfig();
-      
+
       expect(isDevelopment()).toBe(false);
       expect(isProduction()).toBe(false);
       expect(isTest()).toBe(true);
@@ -207,7 +207,7 @@ describe('config', () => {
       process.env.CORS_ORIGINS = '  https://example.com  ,  https://app.example.com  ';
 
       const config = getConfig();
-      
+
       expect(config.CORS_ORIGINS).toEqual(['https://example.com', 'https://app.example.com']);
     });
 
@@ -215,7 +215,7 @@ describe('config', () => {
       delete process.env.REDIS_URL;
 
       const config = getConfig();
-      
+
       expect(config.REDIS_URL).toBeUndefined();
     });
 
@@ -229,7 +229,7 @@ describe('config', () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
 
       const config = getConfig();
-      
+
       expect(config.REDIS_URL).toBe('redis://localhost:6379');
     });
   });

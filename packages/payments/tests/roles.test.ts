@@ -30,12 +30,12 @@ describe('roles', () => {
   describe('getStripePriceRoleMapping', () => {
     it('should return correct price to role mapping', () => {
       const mapping = getStripePriceRoleMapping();
-      
+
       expect(mapping).toEqual({
-        'price_calc_monthly_123': 'calc_paid',
-        'price_calc_yearly_456': 'calc_paid',
-        'price_all_monthly_789': 'all_paid',
-        'price_all_yearly_012': 'all_paid',
+        price_calc_monthly_123: 'calc_paid',
+        price_calc_yearly_456: 'calc_paid',
+        price_all_monthly_789: 'all_paid',
+        price_all_yearly_012: 'all_paid',
       });
     });
   });
@@ -84,7 +84,7 @@ describe('roles', () => {
   describe('getValidStripePriceIds', () => {
     it('should return all configured price IDs', () => {
       const priceIds = getValidStripePriceIds();
-      
+
       expect(priceIds).toHaveLength(4);
       expect(priceIds).toContain('price_calc_monthly_123');
       expect(priceIds).toContain('price_calc_yearly_456');
@@ -96,7 +96,7 @@ describe('roles', () => {
   describe('getStripePriceIdsForRole', () => {
     it('should return correct price IDs for calc_paid role', () => {
       const priceIds = getStripePriceIdsForRole('calc_paid');
-      
+
       expect(priceIds).toHaveLength(2);
       expect(priceIds).toContain('price_calc_monthly_123');
       expect(priceIds).toContain('price_calc_yearly_456');
@@ -104,7 +104,7 @@ describe('roles', () => {
 
     it('should return correct price IDs for all_paid role', () => {
       const priceIds = getStripePriceIdsForRole('all_paid');
-      
+
       expect(priceIds).toHaveLength(2);
       expect(priceIds).toContain('price_all_monthly_789');
       expect(priceIds).toContain('price_all_yearly_012');

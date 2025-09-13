@@ -44,9 +44,10 @@ export function initializeTracing(): void {
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
-    sdk.shutdown()
+    sdk
+      .shutdown()
       .then(() => console.log('Tracing terminated'))
-      .catch((error) => console.log('Error terminating tracing', error))
+      .catch(error => console.log('Error terminating tracing', error))
       .finally(() => process.exit(0));
   });
 }
@@ -71,7 +72,7 @@ export async function withSpan<T>(
   options: {
     kind?: SpanKind;
     attributes?: Record<string, string | number | boolean>;
-  } = {},
+  } = {}
 ): Promise<T> {
   const tracer = getTracer('ap-calculus-bot');
   const span = tracer.startSpan(name, {
@@ -108,7 +109,7 @@ export function withSpanSync<T>(
   options: {
     kind?: SpanKind;
     attributes?: Record<string, string | number | boolean>;
-  } = {},
+  } = {}
 ): T {
   const tracer = getTracer('ap-calculus-bot');
   const span = tracer.startSpan(name, {
@@ -150,7 +151,7 @@ export function addSpanAttributes(attributes: Record<string, string | number | b
  */
 export function addSpanEvent(
   name: string,
-  attributes: Record<string, string | number | boolean> = {},
+  attributes: Record<string, string | number | boolean> = {}
 ): void {
   const span = trace.getActiveSpan();
   if (span) {
@@ -191,19 +192,15 @@ export function recordSpanException(error: Error): void {
 export async function traceHttpRequest<T>(
   url: string,
   method: string,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<T> {
-  return withSpan(
-    `HTTP ${method} ${url}`,
-    fn,
-    {
-      kind: SpanKind.CLIENT,
-      attributes: {
-        'http.method': method,
-        'http.url': url,
-      },
+  return withSpan(`HTTP ${method} ${url}`, fn, {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'http.method': method,
+      'http.url': url,
     },
-  );
+  });
 }
 
 /**
@@ -216,19 +213,15 @@ export async function traceHttpRequest<T>(
 export async function traceDatabaseOperation<T>(
   operation: string,
   table: string,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<T> {
-  return withSpan(
-    `DB ${operation} ${table}`,
-    fn,
-    {
-      kind: SpanKind.CLIENT,
-      attributes: {
-        'db.operation': operation,
-        'db.sql.table': table,
-      },
+  return withSpan(`DB ${operation} ${table}`, fn, {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'db.operation': operation,
+      'db.sql.table': table,
     },
-  );
+  });
 }
 
 /**
@@ -241,17 +234,13 @@ export async function traceDatabaseOperation<T>(
 export async function traceLlmOperation<T>(
   operation: string,
   model: string,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<T> {
-  return withSpan(
-    `LLM ${operation}`,
-    fn,
-    {
-      kind: SpanKind.CLIENT,
-      attributes: {
-        'llm.operation': operation,
-        'llm.model': model,
-      },
+  return withSpan(`LLM ${operation}`, fn, {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'llm.operation': operation,
+      'llm.model': model,
     },
-  );
+  });
 }
