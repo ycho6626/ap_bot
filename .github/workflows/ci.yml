@@ -16,6 +16,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
@@ -30,6 +34,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
@@ -43,6 +51,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm test --coverage
       - name: Upload coverage to Codecov
@@ -60,6 +72,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test:e2e
