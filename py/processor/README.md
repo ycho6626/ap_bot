@@ -88,7 +88,7 @@ async def process_document(pdf_path, api_key, supabase_url, supabase_key):
 ## Modules
 
 ### ingest.py
-- PDF loading with pdfplumber and PyPDF2 fallback
+- PDF loading with pdfplumber and pypdf fallback
 - Text cleaning and segmentation
 - Figure caption extraction
 - Table and equation detection

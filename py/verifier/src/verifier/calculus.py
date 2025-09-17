@@ -14,7 +14,12 @@ from sympy import symbols, sympify, simplify, expand, factor, cancel, trigsimp
 from sympy.calculus.util import continuous_domain
 from sympy.solvers import solve
 from sympy.series import limit
-from sympy.parsing.sympy_parser import parse_expr
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application,
+    convert_xor,
+)
 import pint
 
 # Set high precision for decimal calculations
@@ -58,6 +63,12 @@ SAFE_SYMBOL_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 UREG = pint.UnitRegistry()
 
 
+SAFE_TRANSFORMATIONS = standard_transformations + (
+    convert_xor,
+    implicit_multiplication_application,
+)
+
+
 def _safe_parse(expr_str: str) -> sp.Basic:
     """
     Safely parse a mathematical expression using strict allowlist.
@@ -73,7 +84,7 @@ def _safe_parse(expr_str: str) -> sp.Basic:
     """
     try:
         # First, try to parse and get all function names
-        parsed = parse_expr(expr_str, transformations='all')
+        parsed = parse_expr(expr_str, transformations=SAFE_TRANSFORMATIONS)
         
         # Check for unsafe functions
         for func in parsed.atoms(sp.Function):

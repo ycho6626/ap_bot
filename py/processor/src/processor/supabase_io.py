@@ -4,7 +4,7 @@ import asyncio
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from supabase import create_client, Client
@@ -94,7 +94,7 @@ class SupabaseIO:
             page_number=page_number,
             figure_caption=figure_caption,
             metadata=metadata or {},
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
     
     def _prepare_embedding_record(
@@ -111,7 +111,7 @@ class SupabaseIO:
             embedding=embedding,
             model=model,
             token_count=token_count,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
     
     async def upsert_document(self, document: DocumentRecord) -> Tuple[bool, Optional[str]]:

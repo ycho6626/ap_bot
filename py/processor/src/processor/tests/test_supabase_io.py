@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from processor.supabase_io import (
@@ -28,7 +28,7 @@ class TestDocumentRecord:
             page_number=1,
             figure_caption="Figure 1",
             metadata={"test": "value"},
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         
         assert record.id == "test-id"
@@ -42,6 +42,7 @@ class TestDocumentRecord:
         assert record.figure_caption == "Figure 1"
         assert record.metadata == {"test": "value"}
         assert isinstance(record.created_at, datetime)
+        assert record.created_at.tzinfo == timezone.utc
 
 
 class TestEmbeddingRecord:
@@ -56,7 +57,7 @@ class TestEmbeddingRecord:
             embedding=embedding,
             model="text-embedding-3-large",
             token_count=50,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         
         assert record.id == "embedding-id"
@@ -65,6 +66,7 @@ class TestEmbeddingRecord:
         assert record.model == "text-embedding-3-large"
         assert record.token_count == 50
         assert isinstance(record.created_at, datetime)
+        assert record.created_at.tzinfo == timezone.utc
 
 
 class TestUpsertResult:
@@ -293,8 +295,8 @@ class TestSupabaseIO:
         mock_doc_response = Mock()
         mock_doc_response.data = None
         
-        mock_client = AsyncMock()
-        mock_client.table.return_value.upsert.return_value.execute.return_value = mock_doc_response
+        mock_client = Mock()
+        mock_client.table.return_value.upsert.return_value.execute = AsyncMock(return_value=mock_doc_response)
         mock_async_client_class.return_value = mock_client
         
         # Create test records

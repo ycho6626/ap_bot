@@ -153,15 +153,15 @@ class TestPDFIngester:
             os.unlink(tmp_path)
     
     @patch('processor.ingest.pdfplumber.open')
-    @patch('processor.ingest.PyPDF2.PdfReader')
-    def test_load_pdf_fallback_pypdf2(self, mock_pypdf2, mock_pdfplumber):
-        """Test PDF loading fallback to PyPDF2."""
+    @patch('processor.ingest.PdfReader')
+    def test_load_pdf_fallback_pypdf(self, mock_pypdf2, mock_pdfplumber):
+        """Test PDF loading fallback to pypdf."""
         # Make pdfplumber fail
         mock_pdfplumber.side_effect = Exception("pdfplumber failed")
         
-        # Mock PyPDF2 response
+        # Mock pypdf response
         mock_page = Mock()
-        mock_page.extract_text.return_value = "PyPDF2 extracted text"
+        mock_page.extract_text.return_value = "pypdf extracted text"
         
         mock_reader = Mock()
         mock_reader.pages = [mock_page]
@@ -175,7 +175,7 @@ class TestPDFIngester:
         try:
             segments = self.ingester.load_pdf(tmp_path)
             assert len(segments) == 1
-            assert segments[0].content == "PyPDF2 extracted text"
+            assert segments[0].content == "pypdf extracted text"
         finally:
             os.unlink(tmp_path)
     

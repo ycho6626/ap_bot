@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 
-import PyPDF2
+from pypdf import PdfReader
 import pdfplumber
 from bs4 import BeautifulSoup
 import lxml.html
@@ -63,8 +63,8 @@ class PDFIngester:
                     segments.extend(page_segments)
         except Exception as e:
             logger.error(f"Error loading PDF with pdfplumber: {e}")
-            # Fallback to PyPDF2
-            segments = self._load_with_pypdf2(pdf_path)
+            # Fallback to pypdf for basic text extraction
+            segments = self._load_with_pypdf(pdf_path)
         
         return self._clean_and_merge_segments(segments)
     
@@ -109,12 +109,12 @@ class PDFIngester:
         
         return segments
     
-    def _load_with_pypdf2(self, pdf_path: Path) -> List[DocumentSegment]:
-        """Fallback PDF loading using PyPDF2."""
+    def _load_with_pypdf(self, pdf_path: Path) -> List[DocumentSegment]:
+        """Fallback PDF loading using pypdf."""
         segments = []
         
         with open(pdf_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = PdfReader(file)
             
             for page_num, page in enumerate(pdf_reader.pages, 1):
                 text = page.extract_text()
