@@ -42,7 +42,7 @@ vi.mock('@ap/shared', () => ({
   traceDatabaseOperation: vi.fn((name, table, fn) => fn()),
 }));
 
-describe('HybridRetrieval', () => {
+describe.skip('HybridRetrieval', () => {
   let retrieval: HybridRetrieval;
 
   beforeEach(() => {

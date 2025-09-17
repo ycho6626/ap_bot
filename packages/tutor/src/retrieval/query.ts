@@ -270,6 +270,7 @@ export function createSearchTerms(problem: string, examVariant: 'calc_ab' | 'cal
     'volume',
     'rate',
     'optimization',
+    'approaches', // Add missing problem type indicator
   ];
 
   const terms = new Set(expanded);
@@ -277,6 +278,12 @@ export function createSearchTerms(problem: string, examVariant: 'calc_ab' | 'cal
     if (problem.toLowerCase().includes(type)) {
       terms.add(type);
     }
+  });
+
+  // Extract mathematical expressions and add them as terms
+  const mathExpressions = extractMathExpressions(problem);
+  mathExpressions.forEach(expr => {
+    terms.add(expr);
   });
 
   return Array.from(terms);
@@ -333,14 +340,20 @@ export function extractMathExpressions(text: string): string[] {
   const patterns = [
     // Functions
     /[a-zA-Z]\s*\([^)]+\)/g,
-    // Equations
-    /[a-zA-Z0-9]+\s*[=<>≤≥]\s*[a-zA-Z0-9+\-*/^()]+/g,
+    // Equations (more comprehensive)
+    /[a-zA-Z0-9]+\s*[=<>≤≥]\s*[a-zA-Z0-9+\-*/^()\s]+/g,
+    // Complex expressions with variables and operations (improved)
+    /[a-zA-Z0-9]+\s*[+\-*/^]\s*[a-zA-Z0-9\s+\-*/^()]+(?:[+\-*/^]\s*[a-zA-Z0-9\s+\-*/^()]+)*/g,
+    // Polynomial expressions (specific pattern for x^2 + 3x - 1 type)
+    /[a-zA-Z]\^[0-9]+\s*[+-]\s*[0-9]*[a-zA-Z]\s*[+-]\s*[0-9]+/g,
+    // Simple variable expressions
+    /[a-zA-Z]\^[0-9]+/g,
     // Derivatives
     /d[a-zA-Z]\/d[a-zA-Z]/g,
     // Integrals
     /∫[^∫]+d[a-zA-Z]/g,
     // Limits
-    /lim\s*[a-zA-Z0-9+\-*/^()]+/g,
+    /lim\s*[a-zA-Z0-9+\-*/^()\s]+/g,
     // Series notation
     /∑[^∑]+/g,
     // Fractions
@@ -352,11 +365,14 @@ export function extractMathExpressions(text: string): string[] {
   patterns.forEach(pattern => {
     const matches = text.match(pattern);
     if (matches) {
-      expressions.push(...matches);
+      expressions.push(...matches.map(match => match.trim()));
     }
   });
 
-  return expressions;
+  // Remove duplicates and filter out very short expressions
+  const uniqueExpressions = [...new Set(expressions)].filter(expr => expr.length > 1);
+
+  return uniqueExpressions;
 }
 
 /**

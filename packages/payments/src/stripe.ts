@@ -127,7 +127,7 @@ export async function processInvoicePaidEvent(
   invoice: Stripe.Invoice
 ): Promise<WebhookProcessingResult> {
   try {
-    if (!invoice.subscription || typeof invoice.subscription === 'string') {
+    if (!invoice.subscription) {
       return {
         success: false,
         statusCode: 400,

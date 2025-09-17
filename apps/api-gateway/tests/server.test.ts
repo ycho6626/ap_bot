@@ -23,6 +23,10 @@ vi.mock('@ap/shared/config', () => ({
     API_PORT: 3001,
     NODE_ENV: 'test',
     CORS_ORIGINS: ['http://localhost:3000'],
+    STRIPE_SECRET_KEY: 'sk_test_123',
+    STRIPE_PRICE_CALC_MONTHLY: 'price_calc_monthly_123',
+    STRIPE_PRICE_CALC_YEARLY: 'price_calc_yearly_123',
+    WEB_URL: 'http://localhost:3000',
   })),
 }));
 
@@ -56,6 +60,33 @@ vi.mock('@ap/payments/stripe', () => ({
     statusCode: 200,
     message: 'Webhook processed successfully',
   }),
+}));
+
+vi.mock('stripe', () => ({
+  default: vi.fn(() => ({
+    checkout: {
+      sessions: {
+        create: vi.fn().mockResolvedValue({
+          id: 'cs_test_123',
+          url: 'https://checkout.stripe.com/test',
+        }),
+      },
+    },
+    billingPortal: {
+      sessions: {
+        create: vi.fn().mockResolvedValue({
+          id: 'bps_test_123',
+          url: 'https://billing.stripe.com/test',
+        }),
+      },
+    },
+    customers: {
+      create: vi.fn().mockResolvedValue({
+        id: 'cus_test_123',
+        email: 'demo@example.com',
+      }),
+    },
+  })),
 }));
 
 vi.mock('@ap/shared/supabase', () => ({

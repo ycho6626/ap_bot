@@ -182,6 +182,9 @@ describe('PricingPage', () => {
     mockGetPricingPlans.mockResolvedValue(mockPlans);
     mockStartCheckout.mockRejectedValue(new Error('Checkout failed'));
 
+    // Suppress console.error for this test since we're testing error handling
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     render(<PricingPage />);
 
     await waitFor(() => {
@@ -194,6 +197,9 @@ describe('PricingPage', () => {
     await waitFor(() => {
       expect(mockStartCheckout).toHaveBeenCalledWith('price_pro_monthly');
       expect(mockAssign).not.toHaveBeenCalled();
-    });
+    }, { timeout: 5000 });
+    
+    // Restore console.error
+    consoleSpy.mockRestore();
   });
 });

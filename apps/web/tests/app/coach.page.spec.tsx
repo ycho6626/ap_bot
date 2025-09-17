@@ -216,13 +216,19 @@ describe('CoachPage - AB/BC Variant Persistence', () => {
     const submitButton = screen.getByRole('button', { name: '' });
     await user.click(submitButton);
 
-    // Switch to BC variant while loading
+    // Wait for the first API call to complete
+    await waitFor(() => {
+      expect(mockCoach).toHaveBeenCalledWith('What is the integral of x?', 'calc_ab');
+    }, { timeout: 5000 });
+
+    // Switch to BC variant after first call completes
     const bcButton = screen.getByTestId('variant-bc');
     await user.click(bcButton);
 
+    // Wait for variant change to be processed
     await waitFor(() => {
-      expect(mockCoach).toHaveBeenCalledWith('What is the integral of x?', 'calc_ab');
-    });
+      expect(bcButton).toHaveClass('selected');
+    }, { timeout: 2000 });
 
     // Next question should use BC variant
     await user.clear(input);
@@ -231,6 +237,6 @@ describe('CoachPage - AB/BC Variant Persistence', () => {
 
     await waitFor(() => {
       expect(mockCoach).toHaveBeenCalledWith('What is the derivative of sin(x)?', 'calc_bc');
-    });
+    }, { timeout: 5000 });
   });
 });

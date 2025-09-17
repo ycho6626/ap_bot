@@ -8,6 +8,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
+    testTimeout: 10000, // 10 seconds max per test
+    hookTimeout: 10000, // 10 seconds max per hook
+    teardownTimeout: 10000, // 10 seconds max for teardown
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

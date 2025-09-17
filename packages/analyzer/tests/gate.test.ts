@@ -1,218 +1,370 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { checkQualityGates, QualityGateResult } from '../src/gate';
+import { runQualityGates } from '../src/gate';
 import { analyzeVAM, VAMAnalysis } from '../src/vam';
 
-// Mock the logger
-vi.mock('@ap/shared/logger', () => ({
-  createLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
+// Mock the VAM analysis function
+vi.mock('../src/vam', () => ({
+  analyzeVAM: vi.fn(),
 }));
 
 describe('Quality Gates', () => {
   const mockVAMAnalysis: VAMAnalysis = {
-    total_events: 100,
-    verified_count: 99,
-    verifier_equiv_count: 98,
-    error_count: 1,
-    avg_response_time_ms: 2000,
-    avg_trust_score: 0.95,
-    verified_share: 0.99,
-    verifier_equiv_rate: 0.98,
-    error_rate: 0.01,
-    abstain_rate: 0.01,
+    overall: {
+      total_requests: 100,
+      verified_count: 99,
+      abstain_count: 1,
+      verification_failures: 1,
+      verified_share: 0.99,
+      abstain_rate: 0.01,
+      avg_trust_score: 0.95,
+      avg_response_time_ms: 2000,
+      verifier_equiv_count: 99,
+      verifier_equiv_rate: 0.99,
+    },
+    by_variant: {
+      calc_ab: {
+        total_requests: 50,
+        verified_count: 49,
+        abstain_count: 1,
+        verification_failures: 0,
+        verified_share: 0.98,
+        abstain_rate: 0.02,
+        avg_trust_score: 0.96,
+        avg_response_time_ms: 1900,
+        verifier_equiv_count: 48,
+        verifier_equiv_rate: 0.96,
+      },
+      calc_bc: {
+        total_requests: 50,
+        verified_count: 50,
+        abstain_count: 0,
+        verification_failures: 1,
+        verified_share: 1.0,
+        abstain_rate: 0.0,
+        avg_trust_score: 0.94,
+        avg_response_time_ms: 2100,
+        verifier_equiv_count: 50,
+        verifier_equiv_rate: 1.0,
+      },
+    },
+    by_time_period: {
+      last_hour: {
+        total_requests: 10,
+        verified_count: 10,
+        abstain_count: 0,
+        verification_failures: 0,
+        verified_share: 1.0,
+        abstain_rate: 0.0,
+        avg_trust_score: 0.98,
+        avg_response_time_ms: 1800,
+        verifier_equiv_count: 10,
+        verifier_equiv_rate: 1.0,
+      },
+      last_day: {
+        total_requests: 50,
+        verified_count: 49,
+        abstain_count: 1,
+        verification_failures: 0,
+        verified_share: 0.98,
+        abstain_rate: 0.02,
+        avg_trust_score: 0.95,
+        avg_response_time_ms: 2000,
+        verifier_equiv_count: 49,
+        verifier_equiv_rate: 0.98,
+      },
+      last_week: {
+        total_requests: 100,
+        verified_count: 99,
+        abstain_count: 1,
+        verification_failures: 1,
+        verified_share: 0.99,
+        abstain_rate: 0.01,
+        avg_trust_score: 0.95,
+        avg_response_time_ms: 2000,
+        verifier_equiv_count: 98,
+        verifier_equiv_rate: 0.98,
+      },
+    },
+    trends: {
+      verified_share_trend: 'stable' as const,
+      response_time_trend: 'stable' as const,
+    },
   };
 
   const mockVAMAnalysisFailing: VAMAnalysis = {
-    total_events: 100,
-    verified_count: 90,
-    verifier_equiv_count: 85,
-    error_count: 10,
-    avg_response_time_ms: 6000,
-    avg_trust_score: 0.85,
-    verified_share: 0.9,
-    verifier_equiv_rate: 0.85,
-    error_rate: 0.1,
-    abstain_rate: 0.1,
+    overall: {
+      total_requests: 100,
+      verified_count: 90,
+      abstain_count: 10,
+      verification_failures: 10,
+      verified_share: 0.9,
+      abstain_rate: 0.1,
+      avg_trust_score: 0.85,
+      avg_response_time_ms: 6000,
+      verifier_equiv_count: 85,
+      verifier_equiv_rate: 0.85,
+    },
+    by_variant: {
+      calc_ab: {
+        total_requests: 50,
+        verified_count: 45,
+        abstain_count: 5,
+        verification_failures: 5,
+        verified_share: 0.9,
+        abstain_rate: 0.1,
+        avg_trust_score: 0.85,
+        avg_response_time_ms: 6000,
+        verifier_equiv_count: 42,
+        verifier_equiv_rate: 0.84,
+      },
+      calc_bc: {
+        total_requests: 50,
+        verified_count: 45,
+        abstain_count: 5,
+        verification_failures: 5,
+        verified_share: 0.9,
+        abstain_rate: 0.1,
+        avg_trust_score: 0.85,
+        avg_response_time_ms: 6000,
+        verifier_equiv_count: 43,
+        verifier_equiv_rate: 0.86,
+      },
+    },
+    by_time_period: {
+      last_hour: {
+        total_requests: 10,
+        verified_count: 9,
+        abstain_count: 1,
+        verification_failures: 1,
+        verified_share: 0.9,
+        abstain_rate: 0.1,
+        avg_trust_score: 0.85,
+        avg_response_time_ms: 6000,
+        verifier_equiv_count: 8,
+        verifier_equiv_rate: 0.8,
+      },
+      last_day: {
+        total_requests: 50,
+        verified_count: 45,
+        abstain_count: 5,
+        verification_failures: 5,
+        verified_share: 0.9,
+        abstain_rate: 0.1,
+        avg_trust_score: 0.85,
+        avg_response_time_ms: 6000,
+        verifier_equiv_count: 42,
+        verifier_equiv_rate: 0.84,
+      },
+      last_week: {
+        total_requests: 100,
+        verified_count: 90,
+        abstain_count: 10,
+        verification_failures: 10,
+        verified_share: 0.9,
+        abstain_rate: 0.1,
+        avg_trust_score: 0.85,
+        avg_response_time_ms: 6000,
+        verifier_equiv_count: 85,
+        verifier_equiv_rate: 0.85,
+      },
+    },
+    trends: {
+      verified_share_trend: 'declining' as const,
+      response_time_trend: 'declining' as const,
+    },
   };
 
-  describe('checkQualityGates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('runQualityGates', () => {
     it('should pass when all metrics meet thresholds', async () => {
-      const result = await checkQualityGates(mockVAMAnalysis);
+      vi.mocked(analyzeVAM).mockResolvedValue(mockVAMAnalysis);
+
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: true,
-        verified_share_ok: true,
-        verifier_equiv_ok: true,
-        response_time_ok: true,
-        error_rate_ok: true,
-        trust_score_ok: true,
-        overall_score: expect.any(Number),
+        environment: 'production',
+        time_window_hours: 24,
+        failures: [],
+        warnings: expect.any(Array),
       });
 
-      expect(result.overall_score).toBeGreaterThan(0.9);
+      expect(result.metrics.verified_share).toBe(0.99);
+      expect(result.metrics.verifier_equiv_rate).toBe(0.99);
+      expect(result.metrics.avg_response_time_ms).toBe(2000);
     });
 
     it('should fail when verified share is too low', async () => {
       const failingAnalysis = {
         ...mockVAMAnalysis,
-        verified_share: 0.9, // Below 0.985 threshold
+        overall: {
+          ...mockVAMAnalysis.overall,
+          verified_share: 0.9, // Below 0.985 threshold
+        },
       };
+      vi.mocked(analyzeVAM).mockResolvedValue(failingAnalysis);
 
-      const result = await checkQualityGates(failingAnalysis);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: false,
-        verifier_equiv_ok: true,
-        response_time_ok: true,
-        error_rate_ok: true,
-        trust_score_ok: true,
-        overall_score: expect.any(Number),
+        environment: 'production',
+        time_window_hours: 24,
+        failures: expect.arrayContaining([
+          expect.stringContaining('Verified share 0.9000 below threshold 0.985'),
+        ]),
       });
     });
 
     it('should fail when verifier equivalence is too low', async () => {
       const failingAnalysis = {
         ...mockVAMAnalysis,
-        verifier_equiv_rate: 0.95, // Below 0.99 threshold
+        overall: {
+          ...mockVAMAnalysis.overall,
+          verifier_equiv_rate: 0.95, // Below 0.99 threshold
+        },
       };
+      vi.mocked(analyzeVAM).mockResolvedValue(failingAnalysis);
 
-      const result = await checkQualityGates(failingAnalysis);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: true,
-        verifier_equiv_ok: false,
-        response_time_ok: true,
-        error_rate_ok: true,
-        trust_score_ok: true,
-        overall_score: expect.any(Number),
+        failures: expect.arrayContaining([
+          expect.stringContaining('Verifier equivalence 0.9500 below threshold 0.99'),
+        ]),
       });
     });
 
     it('should fail when response time is too high', async () => {
       const failingAnalysis = {
         ...mockVAMAnalysis,
-        avg_response_time_ms: 6000, // Above 5000ms threshold
+        overall: {
+          ...mockVAMAnalysis.overall,
+          avg_response_time_ms: 6000, // Above 5000ms threshold
+        },
       };
+      vi.mocked(analyzeVAM).mockResolvedValue(failingAnalysis);
 
-      const result = await checkQualityGates(failingAnalysis);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: true,
-        verifier_equiv_ok: true,
-        response_time_ok: false,
-        error_rate_ok: true,
-        trust_score_ok: true,
-        overall_score: expect.any(Number),
+        failures: expect.arrayContaining([
+          expect.stringContaining('Average response time 6000ms exceeds threshold 5000ms'),
+        ]),
       });
     });
 
     it('should fail when error rate is too high', async () => {
       const failingAnalysis = {
         ...mockVAMAnalysis,
-        error_rate: 0.05, // Above 0.01 threshold
+        overall: {
+          ...mockVAMAnalysis.overall,
+          verification_failures: 5, // 5% error rate, above 1% threshold
+        },
       };
+      vi.mocked(analyzeVAM).mockResolvedValue(failingAnalysis);
 
-      const result = await checkQualityGates(failingAnalysis);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: true,
-        verifier_equiv_ok: true,
-        response_time_ok: true,
-        error_rate_ok: false,
-        trust_score_ok: true,
-        overall_score: expect.any(Number),
+        failures: expect.arrayContaining([
+          expect.stringContaining('Error rate 0.0500 exceeds threshold 0.01'),
+        ]),
       });
     });
 
     it('should fail when trust score is too low', async () => {
       const failingAnalysis = {
         ...mockVAMAnalysis,
-        avg_trust_score: 0.85, // Below 0.92 threshold
+        overall: {
+          ...mockVAMAnalysis.overall,
+          avg_trust_score: 0.85, // Below 0.92 threshold
+        },
       };
+      vi.mocked(analyzeVAM).mockResolvedValue(failingAnalysis);
 
-      const result = await checkQualityGates(failingAnalysis);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: true,
-        verifier_equiv_ok: true,
-        response_time_ok: true,
-        error_rate_ok: true,
-        trust_score_ok: false,
-        overall_score: expect.any(Number),
+        failures: expect.arrayContaining([
+          expect.stringContaining('Average trust score 0.8500 below threshold 0.92'),
+        ]),
       });
     });
 
     it('should fail when multiple metrics are below thresholds', async () => {
-      const result = await checkQualityGates(mockVAMAnalysisFailing);
+      vi.mocked(analyzeVAM).mockResolvedValue(mockVAMAnalysisFailing);
+
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+      });
 
       expect(result).toMatchObject({
         passed: false,
-        verified_share_ok: false,
-        verifier_equiv_ok: false,
-        response_time_ok: false,
-        error_rate_ok: false,
-        trust_score_ok: false,
-        overall_score: expect.any(Number),
+        failures: expect.arrayContaining([
+          expect.stringContaining('Verified share'),
+          expect.stringContaining('Verifier equivalence'),
+          expect.stringContaining('Average response time'),
+          expect.stringContaining('Error rate'),
+          expect.stringContaining('Average trust score'),
+        ]),
       });
     });
 
-    it('should calculate overall score correctly', async () => {
-      const result = await checkQualityGates(mockVAMAnalysis);
+    it('should handle custom thresholds', async () => {
+      vi.mocked(analyzeVAM).mockResolvedValue(mockVAMAnalysis);
 
-      // Overall score should be a weighted average of all metrics
-      expect(result.overall_score).toBeGreaterThan(0);
-      expect(result.overall_score).toBeLessThanOrEqual(1);
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
+        custom_thresholds: {
+          min_verified_share: 0.99,
+          min_verifier_equiv: 0.99,
+        },
+      });
+
+      expect(result.thresholds.min_verified_share).toBe(0.99);
+      expect(result.thresholds.min_verifier_equiv).toBe(0.99);
     });
 
-    it('should handle edge cases', async () => {
-      const edgeCaseAnalysis: VAMAnalysis = {
-        total_events: 0,
-        verified_count: 0,
-        verifier_equiv_count: 0,
-        error_count: 0,
-        avg_response_time_ms: 0,
-        avg_trust_score: 0,
-        verified_share: 0,
-        verifier_equiv_rate: 0,
-        error_rate: 0,
-        abstain_rate: 0,
-      };
+    it('should generate proper summary', async () => {
+      vi.mocked(analyzeVAM).mockResolvedValue(mockVAMAnalysis);
 
-      const result = await checkQualityGates(edgeCaseAnalysis);
-
-      expect(result).toMatchObject({
-        passed: false,
-        verified_share_ok: false,
-        verifier_equiv_ok: false,
-        response_time_ok: true, // 0ms is below threshold
-        error_rate_ok: true, // 0% is below threshold
-        trust_score_ok: false,
-        overall_score: expect.any(Number),
+      const result = await runQualityGates({
+        environment: 'production',
+        time_window_hours: 24,
       });
-    });
-  });
 
-  describe('QualityGateResult interface', () => {
-    it('should have correct structure', () => {
-      const result = checkQualityGates(mockVAMAnalysis);
-
-      expect(result).resolves.toMatchObject({
-        passed: expect.any(Boolean),
-        verified_share_ok: expect.any(Boolean),
-        verifier_equiv_ok: expect.any(Boolean),
-        response_time_ok: expect.any(Boolean),
-        error_rate_ok: expect.any(Boolean),
-        trust_score_ok: expect.any(Boolean),
-        overall_score: expect.any(Number),
-      });
+      expect(result.summary).toContain('Quality Gate ✅ PASSED');
+      expect(result.summary).toContain('Environment: production');
+      expect(result.summary).toContain('Time Window: 24 hours');
+      expect(result.summary).toContain('Total Requests: 100');
     });
   });
 });

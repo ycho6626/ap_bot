@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { config } from './config';
-import type { KbDocument, KbCanonicalSolution, ReviewCase, UserRole } from './types';
+import { config } from './config.js';
+import type { KbDocument, KbCanonicalSolution, ReviewCase, UserRole } from './types.js';
 
 // Database schema type definitions removed for now to simplify compilation
 

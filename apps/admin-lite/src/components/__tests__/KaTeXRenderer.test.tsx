@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import { KaTeXRenderer } from '../KaTeXRenderer';
 
 // Mock react-katex
