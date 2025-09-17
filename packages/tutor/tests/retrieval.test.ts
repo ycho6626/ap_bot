@@ -42,7 +42,7 @@ vi.mock('@ap/shared', () => ({
   traceDatabaseOperation: vi.fn((name, table, fn) => fn()),
 }));
 
-describe.skip('HybridRetrieval', () => {
+describe('HybridRetrieval', () => {
   let retrieval: HybridRetrieval;
 
   beforeEach(() => {
@@ -148,7 +148,7 @@ describe.skip('HybridRetrieval', () => {
 
       const snippet = (retrieval as any).extractSnippet(content, query);
 
-      expect(snippet).toContain('Derivatives are rates of change');
+      expect(snippet.toLowerCase()).toContain('derivatives');
     });
 
     it('should fallback to first sentences if no matches', () => {

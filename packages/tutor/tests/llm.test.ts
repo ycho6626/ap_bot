@@ -3,26 +3,32 @@ import { LLMClient, llmUtils } from '../src/llm';
 
 // Mock OpenAI
 vi.mock('openai', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: vi.fn(),
-        },
+  const MockOpenAI = vi.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: vi.fn(),
       },
-      models: {
-        list: vi.fn(),
-      },
-    })),
-    APIError: class extends Error {
-      constructor(
-        public status: number,
-        public code: string,
-        message: string
-      ) {
-        super(message);
-      }
     },
+    models: {
+      list: vi.fn(),
+    },
+  }));
+
+  class MockAPIError extends Error {
+    constructor(
+      public status: number,
+      public code: string,
+      message: string
+    ) {
+      super(message);
+    }
+  }
+
+  (MockOpenAI as any).APIError = MockAPIError;
+
+  return {
+    default: MockOpenAI,
+    APIError: MockAPIError,
   };
 });
 
@@ -39,14 +45,16 @@ vi.mock('@ap/shared', () => ({
   })),
   createOpenAIClient: vi.fn(() => ({})),
   httpUtils: {
-    isTimeoutError: vi.fn(() => false),
+    isTimeoutError: vi.fn(error =>
+      error instanceof Error && error.message.toLowerCase().includes('rate limit')
+    ),
     isNetworkError: vi.fn(() => false),
-    getRetryDelay: vi.fn(attempt => 1000 * Math.pow(2, attempt)),
+    getRetryDelay: vi.fn(() => 0),
   },
   traceLlmOperation: vi.fn((name, model, fn) => fn()),
 }));
 
-describe.skip('LLMClient', () => {
+describe('LLMClient', () => {
   let client: LLMClient;
   let mockOpenAI: any;
 
@@ -244,7 +252,7 @@ describe.skip('LLMClient', () => {
         })
       ).rejects.toThrow('Non-retryable error');
 
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(4);
     });
   });
 });

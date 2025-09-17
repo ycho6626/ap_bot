@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const { mockPost, mockVerifierClient } = vi.hoisted(() => {
+  const mockPost = vi.fn();
+  const mockVerifierClient = { post: mockPost };
+  return { mockPost, mockVerifierClient };
+});
+
 // Mock @ap/shared
 vi.mock('@ap/shared', () => ({
   createLogger: vi.fn(() => ({
@@ -8,16 +14,7 @@ vi.mock('@ap/shared', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
-  createVerifierClient: vi.fn(() => ({
-    post: vi.fn().mockReturnValue({
-      json: vi.fn().mockResolvedValue({
-        ok: true,
-        checks: [],
-        overallConfidence: 0.95,
-        normalizedAnswer: '2x',
-      }),
-    }),
-  })),
+  createVerifierClient: vi.fn(() => mockVerifierClient),
   traceHttpOperation: vi.fn((name, service, fn) => fn()),
   approximatelyEqual: vi.fn(() => true),
   isZero: vi.fn(() => false),
@@ -28,13 +25,28 @@ vi.mock('@ap/shared', () => ({
 // Import after mocking
 import { VerifierClient } from '../src/verify';
 
-describe.skip('VerifierClient', () => {
+describe('VerifierClient', () => {
   let client: VerifierClient;
+  let mockClient: typeof mockVerifierClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPost.mockReset();
     client = new VerifierClient();
+    mockClient = (client as any).client;
   });
+
+  const setPostResponse = (response: any) => {
+    mockClient.post.mockReturnValueOnce({
+      json: vi.fn().mockResolvedValue(response),
+    });
+  };
+
+  const setPostError = (error: Error) => {
+    mockClient.post.mockReturnValueOnce({
+      json: vi.fn().mockRejectedValue(error),
+    });
+  };
 
   describe('verify', () => {
     it('should verify a solution successfully', async () => {
@@ -52,7 +64,7 @@ describe.skip('VerifierClient', () => {
         overallConfidence: 0.95,
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verify('Find the derivative of x^2', '2x');
 
@@ -72,7 +84,7 @@ describe.skip('VerifierClient', () => {
 
     it('should handle verification errors', async () => {
       const error = new Error('Verification failed');
-      mockClient.post.mockRejectedValue(error);
+      setPostError(error);
 
       const result = await client.verify('test problem', 'test solution');
 
@@ -90,7 +102,7 @@ describe.skip('VerifierClient', () => {
         overallConfidence: 0.8,
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       await client.verify('test problem', 'test solution', {
         checkTypes: ['derivative'],
@@ -123,7 +135,7 @@ describe.skip('VerifierClient', () => {
         message: 'Derivative is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyDerivative('x^2', '2x', 'x');
 
@@ -139,7 +151,7 @@ describe.skip('VerifierClient', () => {
 
     it('should handle derivative verification errors', async () => {
       const error = new Error('Derivative verification failed');
-      mockClient.post.mockRejectedValue(error);
+      setPostError(error);
 
       const result = await client.verifyDerivative('x^2', '2x', 'x');
 
@@ -159,7 +171,7 @@ describe.skip('VerifierClient', () => {
         message: 'Integral is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyIntegral('2x', 'x^2 + C', 'x');
 
@@ -182,7 +194,7 @@ describe.skip('VerifierClient', () => {
         message: 'Integral is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyIntegral('2x', 'x^2', 'x', { lower: 0, upper: 1 });
 
@@ -206,7 +218,7 @@ describe.skip('VerifierClient', () => {
         message: 'Limit is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyLimit('x^2', '0', 'x', '0');
 
@@ -231,7 +243,7 @@ describe.skip('VerifierClient', () => {
         message: 'Algebraic manipulation is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyAlgebra('x^2 + 2x + 1', '(x + 1)^2', 'x');
 
@@ -248,7 +260,7 @@ describe.skip('VerifierClient', () => {
         message: 'Units are correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyUnits('5 m/s', 'm/s');
 
@@ -265,7 +277,7 @@ describe.skip('VerifierClient', () => {
         message: 'Dimensional analysis is correct',
       };
 
-      mockClient.post.mockResolvedValue(mockResponse);
+      setPostResponse(mockResponse);
 
       const result = await client.verifyDimensionalAnalysis('v = d/t', 'L/T');
 
