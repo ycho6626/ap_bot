@@ -11,11 +11,11 @@ export const rawBodyPlugin: FastifyPluginAsync = async fastify => {
   // Add raw body to request object for webhook signature verification
   fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
     try {
-      // Store raw body for webhook signature verification
-      (req as any).rawBody = body;
+      const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      req.rawBody = rawBody;
 
       // Parse JSON for normal processing
-      const json = JSON.parse(body.toString());
+      const json = JSON.parse(rawBody.toString());
       done(null, json);
     } catch (error) {
       logger.error(
@@ -32,11 +32,10 @@ export const rawBodyPlugin: FastifyPluginAsync = async fastify => {
   // Handle text/plain content type for webhooks
   fastify.addContentTypeParser('text/plain', { parseAs: 'buffer' }, (req, body, done) => {
     try {
-      // Store raw body for webhook signature verification
-      (req as any).rawBody = body;
+      const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      req.rawBody = rawBody;
 
-      // Return as string for normal processing
-      done(null, body.toString());
+      done(null, rawBody.toString());
     } catch (error) {
       logger.error(
         {
@@ -55,11 +54,10 @@ export const rawBodyPlugin: FastifyPluginAsync = async fastify => {
     { parseAs: 'buffer' },
     (req, body, done) => {
       try {
-        // Store raw body for webhook signature verification
-        (req as any).rawBody = body;
+        const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
+        req.rawBody = rawBody;
 
-        // Parse form data
-        const formData = body.toString();
+        const formData = rawBody.toString();
         const parsed = new URLSearchParams(formData);
         const result: Record<string, string> = {};
 
@@ -83,21 +81,15 @@ export const rawBodyPlugin: FastifyPluginAsync = async fastify => {
 
   // Add helper method to get raw body
   fastify.decorateRequest('getRawBody', function (this: FastifyRequest) {
-    return (this as any).rawBody;
+    return this.rawBody;
   });
 
   // Add helper method to check if raw body exists
   fastify.decorateRequest('hasRawBody', function (this: FastifyRequest) {
-    return !!(this as any).rawBody;
+    return this.rawBody !== undefined;
   });
 
   logger.info('Raw body plugin registered');
-};
 
-// Extend FastifyRequest type to include raw body methods
-declare module 'fastify' {
-  interface FastifyRequest {
-    getRawBody(): Buffer | undefined;
-    hasRawBody(): boolean;
-  }
-}
+  await Promise.resolve();
+};

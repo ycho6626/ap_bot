@@ -10,6 +10,7 @@ import {
   getPricingPlans,
   healthCheck,
 } from '../../src/lib/api.bridge';
+import * as logging from '../../src/lib/logging';
 
 // Mock the apiClient
 vi.mock('../../src/lib/api', () => ({
@@ -329,7 +330,7 @@ describe('API Bridge', () => {
     });
 
     it('should fallback to logging on error', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const infoSpy = vi.spyOn(logging, 'reportInfo').mockImplementation(() => {});
 
       mockSupabaseClient.auth.getSession.mockResolvedValue({
         data: { session: null },
@@ -338,12 +339,12 @@ describe('API Bridge', () => {
 
       await resolveCase('case_1', 'reject', 'Needs improvement');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(infoSpy).toHaveBeenCalledWith(
         'Resolving case case_1 with action: reject',
-        'Feedback: Needs improvement'
+        { feedback: 'Needs improvement' }
       );
 
-      consoleSpy.mockRestore();
+      infoSpy.mockRestore();
     });
   });
 

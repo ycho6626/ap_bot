@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, Clock, Tag, Share2, Download } from 'lucide-react';
 import { searchKB } from '@/lib/api.bridge';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
+import { reportError, reportInfo } from '@/lib/logging';
 
 interface LessonDocument {
   id: string;
@@ -31,40 +32,42 @@ export default function LessonDetailPage() {
   const [document, setDocument] = useState<LessonDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [examVariant, setExamVariant] = useState<ExamVariant>('calc_ab');
+  const lessonId = params['id'] as string | undefined;
 
   useEffect(() => {
     const savedVariant = examVariantStorage.get();
     setExamVariant(savedVariant);
   }, []);
 
-  useEffect(() => {
-    if (params['id']) {
-      void loadDocument(params['id'] as string);
-    }
-  }, [params['id']]);
+  const loadDocument = useCallback(
+    async (documentId: string) => {
+      setIsLoading(true);
+      try {
+        const response = await searchKB(documentId, examVariant);
+        const foundDocument = response.results.find(r => r.document.id === documentId);
 
-  const loadDocument = async (documentId: string) => {
-    setIsLoading(true);
-    try {
-      // For now, we'll search for the document by ID
-      // In a real implementation, this would call a getDocument API
-      const response = await searchKB(documentId, examVariant);
-      const foundDocument = response.results.find(r => r.document.id === documentId);
-
-      if (foundDocument) {
-        setDocument(foundDocument.document);
-      } else {
-        toast.error('Document not found');
+        if (foundDocument) {
+          setDocument(foundDocument.document);
+        } else {
+          toast.error('Document not found');
+          router.push('/lessons');
+        }
+      } catch (error) {
+        reportError('Error loading document:', error);
+        toast.error('Failed to load document. Please try again.');
         router.push('/lessons');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading document:', error);
-      toast.error('Failed to load document. Please try again.');
-      router.push('/lessons');
-    } finally {
-      setIsLoading(false);
+    },
+    [examVariant, router]
+  );
+
+  useEffect(() => {
+    if (lessonId) {
+      void loadDocument(lessonId);
     }
-  };
+  }, [lessonId, loadDocument]);
 
   const getPartitionColor = (partition: string) => {
     switch (partition) {
@@ -101,7 +104,7 @@ export default function LessonDetailPage() {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Error sharing:', error);
+        reportInfo('Error sharing lesson link:', error);
       }
     } else {
       // Fallback: copy to clipboard

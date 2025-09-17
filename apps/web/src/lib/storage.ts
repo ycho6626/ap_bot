@@ -3,6 +3,7 @@
  */
 
 import type { ExamVariant } from '@ap/shared/types';
+import { reportWarning } from './logging';
 
 /**
  * Storage keys for different data types
@@ -50,7 +51,7 @@ export const storage = {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      console.warn(`Failed to get ${key} from localStorage:`, error);
+      reportWarning(`Failed to get ${key} from localStorage:`, error);
       return defaultValue;
     }
   },
@@ -63,7 +64,7 @@ export const storage = {
       if (typeof window === 'undefined') return;
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.warn(`Failed to set ${key} in localStorage:`, error);
+      reportWarning(`Failed to set ${key} in localStorage:`, error);
     }
   },
 
@@ -75,7 +76,7 @@ export const storage = {
       if (typeof window === 'undefined') return;
       localStorage.removeItem(key);
     } catch (error) {
-      console.warn(`Failed to remove ${key} from localStorage:`, error);
+      reportWarning(`Failed to remove ${key} from localStorage:`, error);
     }
   },
 
@@ -89,7 +90,7 @@ export const storage = {
         localStorage.removeItem(key);
       });
     } catch (error) {
-      console.warn('Failed to clear localStorage:', error);
+      reportWarning('Failed to clear localStorage:', error);
     }
   },
 };

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import toast from 'react-hot-toast';
+import { reportError } from '@/lib/logging';
 
 interface ReviewCase {
   id: string;
@@ -57,7 +58,7 @@ export default function ReviewPage() {
       const reviewCases = await listReviewCases();
       setCases(reviewCases);
     } catch (error) {
-      console.error('Error loading review cases:', error);
+      reportError('Error loading review cases:', error);
       toast.error('Failed to load review cases. Please try again.');
     } finally {
       setIsLoading(false);
@@ -77,7 +78,7 @@ export default function ReviewPage() {
       setFeedback('');
       toast.success(`Case ${action}d successfully`);
     } catch (error) {
-      console.error('Error resolving case:', error);
+      reportError('Error resolving case:', error);
       toast.error('Failed to resolve case. Please try again.');
     } finally {
       setIsResolving(null);

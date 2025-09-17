@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { getPricingPlans, startCheckout } from '@/lib/api.bridge';
 import toast from 'react-hot-toast';
+import { reportError } from '@/lib/logging';
 
 interface PricingPlan {
   id: string;
@@ -35,7 +36,7 @@ export default function PricingPage() {
       const pricingPlans = await getPricingPlans();
       setPlans(pricingPlans);
     } catch (error) {
-      console.error('Error loading pricing plans:', error);
+      reportError('Error loading pricing plans:', error);
       // Mock pricing plans for demo
       setPlans([
         {
@@ -110,7 +111,7 @@ export default function PricingPage() {
       window.location.assign(session.url);
       toast.success('Redirecting to checkout...');
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      reportError('Error creating checkout session:', error);
       toast.error('Failed to start checkout. Please try again.');
     } finally {
       setIsCreatingCheckout(null);
@@ -307,7 +308,7 @@ export default function PricingPage() {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto'>
             <Card>
               <CardHeader>
-                <CardTitle className='text-lg'>What's included in the free plan?</CardTitle>
+                <CardTitle className='text-lg'>What&apos;s included in the free plan?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className='text-gray-600'>
@@ -324,7 +325,7 @@ export default function PricingPage() {
               <CardContent>
                 <p className='text-gray-600'>
                   Yes! You can upgrade or downgrade your plan at any time. Changes take effect
-                  immediately, and we'll prorate any charges.
+                  immediately, and we&apos;ll prorate any charges.
                 </p>
               </CardContent>
             </Card>
@@ -347,8 +348,8 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent>
                 <p className='text-gray-600'>
-                  Yes! We offer a 30-day money-back guarantee. If you're not satisfied with our
-                  service, we'll refund your payment, no questions asked.
+                  Yes! We offer a 30-day money-back guarantee. If you&apos;re not satisfied with our
+                  service, we&apos;ll refund your payment, no questions asked.
                 </p>
               </CardContent>
             </Card>

@@ -54,7 +54,7 @@ export const authRoutes: FastifyPluginAsync = async fastify => {
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to get user profile'
         );
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Failed to get user profile',
@@ -66,4 +66,6 @@ export const authRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Auth routes registered');
+
+  await Promise.resolve();
 };

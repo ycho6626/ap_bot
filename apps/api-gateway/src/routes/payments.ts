@@ -134,7 +134,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to get pricing plans'
         );
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Failed to get pricing plans',
@@ -189,7 +189,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
         // Validate price ID
         const validPriceIds = getValidStripePriceIds();
         if (!validPriceIds.includes(priceId) && priceId !== 'price_free') {
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid price ID',
@@ -200,7 +200,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
 
         // Handle free plan
         if (priceId === 'price_free') {
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Free plan does not require checkout',
@@ -254,16 +254,35 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           'Created Stripe checkout session'
         );
 
+        if (!session.url) {
+          logger.error(
+            {
+              sessionId: session.id,
+              priceId,
+              userId,
+            },
+            'Stripe checkout session missing URL'
+          );
+
+          void reply.status(500);
+          return {
+            error: {
+              message: 'Failed to create checkout session',
+              statusCode: 500,
+            },
+          };
+        }
+
         return {
           id: session.id,
-          url: session.url!,
+          url: session.url,
         };
       } catch (error) {
         logger.error(
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to create checkout session'
         );
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Failed to create checkout session',
@@ -329,7 +348,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
             { error: error instanceof Error ? error.message : 'Unknown error' },
             'Failed to create/find Stripe customer'
           );
-          reply.status(500);
+          void reply.status(500);
           return {
             error: {
               message: 'Failed to create customer',
@@ -372,7 +391,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to create billing portal session'
         );
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Failed to create billing portal session',
@@ -384,4 +403,6 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Payment routes registered');
+
+  await Promise.resolve();
 };

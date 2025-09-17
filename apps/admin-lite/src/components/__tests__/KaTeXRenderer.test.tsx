@@ -47,15 +47,10 @@ describe('KaTeXRenderer', () => {
   });
 
   it('should handle malformed math gracefully', () => {
-    // Mock console.warn to avoid noise in tests
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     const { container } = render(<KaTeXRenderer content='This has bad math: $\\invalid{math}$' />);
 
     // Should fall back to showing the raw math (escaped)
     expect(container.textContent).toContain('\\\\invalid{math}');
-
-    consoleSpy.mockRestore();
   });
 
   it('should apply custom className', () => {

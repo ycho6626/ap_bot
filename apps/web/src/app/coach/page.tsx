@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
+import { reportError } from '@/lib/logging';
 
 interface ChatMessage {
   id: string;
@@ -89,7 +90,7 @@ export default function CoachPage() {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error asking coach:', error);
+      reportError('Error asking coach:', error);
       toast.error('Failed to get answer. Please try again.');
 
       const errorMessage: ChatMessage = {
@@ -124,7 +125,7 @@ export default function CoachPage() {
     const lastAssistantMessage = [...messages]
       .reverse()
       .find(m => m.type === 'assistant' && m.sources);
-    return lastAssistantMessage?.sources || [];
+    return lastAssistantMessage?.sources ?? [];
   };
 
   const getLatestSuggestions = () => {
@@ -183,15 +184,15 @@ export default function CoachPage() {
                     <Calculator className='h-12 w-12 text-gray-400 mx-auto mb-4' />
                     <CardTitle className='text-lg mb-2'>Welcome to AP Calculus Coach</CardTitle>
                     <CardDescription className='mb-6'>
-                      Ask me any AP Calculus {formatExamVariant(examVariant)} question and I'll
+                      Ask me any AP Calculus {formatExamVariant(examVariant)} question and I&apos;ll
                       provide verified answers with step-by-step solutions.
                     </CardDescription>
                     <div className='space-y-2 text-sm text-gray-500'>
                       <p>Try asking:</p>
                       <ul className='space-y-1'>
-                        <li>• "Find the derivative of x² + 3x + 2"</li>
-                        <li>• "Evaluate the integral of sin(x) from 0 to π"</li>
-                        <li>• "What is the limit as x approaches 0 of (sin x)/x?"</li>
+                        <li>• &quot;Find the derivative of x² + 3x + 2&quot;</li>
+                        <li>• &quot;Evaluate the integral of sin(x) from 0 to π&quot;</li>
+                        <li>• &quot;What is the limit as x approaches 0 of (sin x)/x?&quot;</li>
                       </ul>
                     </div>
                   </CardContent>

@@ -90,34 +90,45 @@ export const securityPlugin: FastifyPluginAsync = async fastify => {
   // Add security headers middleware
   fastify.addHook('onSend', async (request, reply, payload) => {
     // Add custom security headers
-    reply.header('X-Content-Type-Options', 'nosniff');
-    reply.header('X-Frame-Options', 'DENY');
-    reply.header('X-XSS-Protection', '1; mode=block');
-    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    void reply.headers({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    });
 
     // Add request ID for tracing
+    const headerRequestId =
+      typeof request.headers['x-request-id'] === 'string'
+        ? request.headers['x-request-id']
+        : undefined;
     const requestId =
-      request.headers['x-request-id'] ||
-      request.id ||
+      headerRequestId ??
+      request.requestId ??
+      request.id ??
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    reply.header('X-Request-ID', requestId);
+    void reply.header('X-Request-ID', requestId);
 
     return payload;
   });
 
   // Request ID middleware
   fastify.addHook('onRequest', async (request, reply) => {
+    const headerRequestId =
+      typeof request.headers['x-request-id'] === 'string'
+        ? request.headers['x-request-id']
+        : undefined;
     const requestId =
-      request.headers['x-request-id'] ||
-      request.id ||
+      headerRequestId ??
+      request.requestId ??
+      request.id ??
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Store request ID in request object for logging
-    (request as any).requestId = requestId;
+    request.requestId = requestId;
 
     // Add to reply headers
-    reply.header('X-Request-ID', requestId);
+    void reply.header('X-Request-ID', requestId);
   });
 
   logger.info('Security plugin registered');

@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { reportError, reportWarning, reportInfo } from './logging';
 import {
   apiClient,
   type CoachRequest,
@@ -47,7 +48,7 @@ async function getAuthToken(): Promise<string | null> {
     } = await supabase.auth.getSession();
     return session?.access_token ?? null;
   } catch (error) {
-    console.warn('Failed to get auth session:', error);
+    reportWarning('Failed to get auth session:', error);
     return null;
   }
 }
@@ -88,7 +89,7 @@ export async function searchKB(
     const response = await apiClient.searchKnowledgeBase(request);
     return response;
   } catch (error) {
-    console.error('Knowledge base search failed:', error);
+    reportError('Knowledge base search failed:', error);
     throw new Error('Failed to search knowledge base');
   }
 }
@@ -114,7 +115,7 @@ export async function coach(
     const response = await apiClient.askCoach(request);
     return response;
   } catch (error) {
-    console.error('Coach request failed:', error);
+    reportError('Coach request failed:', error);
     throw new Error('Failed to get coach response');
   }
 }
@@ -126,7 +127,7 @@ export async function startCheckout(priceId: string): Promise<StripeCheckoutSess
   try {
     return await apiClient.createCheckoutSession(priceId);
   } catch (error) {
-    console.error('Checkout session creation failed:', error);
+    reportError('Checkout session creation failed:', error);
     throw new Error('Failed to create checkout session');
   }
 }
@@ -152,7 +153,7 @@ export async function openBillingPortal(): Promise<{ url: string }> {
     const data = await response.json();
     return { url: data.url };
   } catch (error) {
-    console.error('Billing portal request failed:', error);
+    reportError('Billing portal request failed:', error);
     throw new Error('Failed to open billing portal');
   }
 }
@@ -198,7 +199,7 @@ export async function listReviewCases(): Promise<
       updatedAt: string;
     }>;
   } catch (error) {
-    console.error('Review cases request failed:', error);
+    reportError('Review cases request failed:', error);
     // Fallback to mock data for development
     return [
       {
@@ -238,12 +239,8 @@ export async function resolveCase(
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Resolve case request failed:', error);
-    // Fallback to logging for development
-    console.log(
-      `Resolving case ${id} with action: ${action}`,
-      feedback ? `Feedback: ${feedback}` : ''
-    );
+    reportError('Resolve case request failed:', error);
+    reportInfo(`Resolving case ${id} with action: ${action}`, feedback ? { feedback } : undefined);
   }
 }
 
@@ -254,7 +251,7 @@ export async function getUserProfile(): Promise<UserProfile> {
   try {
     return await apiClient.getUserProfile();
   } catch (error) {
-    console.error('Get user profile failed:', error);
+    reportError('Get user profile failed:', error);
     throw new Error('Failed to get user profile');
   }
 }
@@ -277,7 +274,7 @@ export async function getPricingPlans(): Promise<
   try {
     return await apiClient.getPricingPlans();
   } catch (error) {
-    console.error('Get pricing plans failed:', error);
+    reportError('Get pricing plans failed:', error);
     throw new Error('Failed to get pricing plans');
   }
 }
@@ -293,7 +290,7 @@ export async function healthCheck(): Promise<{
   try {
     return await apiClient.healthCheck();
   } catch (error) {
-    console.error('Health check failed:', error);
+    reportError('Health check failed:', error);
     throw new Error('Failed to perform health check');
   }
 }

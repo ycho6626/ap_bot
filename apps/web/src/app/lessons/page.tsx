@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
+import { reportError } from '@/lib/logging';
 
 interface LessonDocument {
   id: string;
@@ -81,7 +82,7 @@ export default function LessonsPage() {
         setSearchHistory(searchHistoryStorage.get());
       }
     } catch (error) {
-      console.error('Search error:', error);
+      reportError('Search error:', error);
       toast.error('Failed to search lessons. Please try again.');
     } finally {
       setIsLoading(false);
@@ -102,7 +103,7 @@ export default function LessonsPage() {
         setSelectedDocument(document.document);
       }
     } catch (error) {
-      console.error('Error fetching document:', error);
+      reportError('Error fetching document:', error);
       toast.error('Failed to load document. Please try again.');
     }
   };
@@ -326,10 +327,10 @@ export default function LessonsPage() {
                   <div className='space-y-2 text-sm text-gray-500'>
                     <p>Try searching for:</p>
                     <ul className='space-y-1'>
-                      <li>• "derivatives"</li>
-                      <li>• "integration techniques"</li>
-                      <li>• "limits and continuity"</li>
-                      <li>• "applications of derivatives"</li>
+                      <li>• &quot;derivatives&quot;</li>
+                      <li>• &quot;integration techniques&quot;</li>
+                      <li>• &quot;limits and continuity&quot;</li>
+                      <li>• &quot;applications of derivatives&quot;</li>
                     </ul>
                   </div>
                 </CardContent>

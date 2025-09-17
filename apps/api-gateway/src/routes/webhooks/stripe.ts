@@ -78,18 +78,20 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         // Get raw body for signature verification
         const rawBody = request.getRawBody();
         if (!rawBody) {
           logger.warn(
             {
-              requestId: (request as any).requestId,
+              requestId,
             },
             'No raw body available for Stripe webhook'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'No raw body available',
@@ -99,16 +101,16 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         }
 
         // Get Stripe signature from headers
-        const signature = request.headers['stripe-signature'] as string;
-        if (!signature) {
+        const signatureHeader = request.headers['stripe-signature'];
+        if (typeof signatureHeader !== 'string') {
           logger.warn(
             {
-              requestId: (request as any).requestId,
+              requestId,
             },
             'No Stripe signature header found'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Missing Stripe signature header',
@@ -117,11 +119,13 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
           };
         }
 
+        const signature = signatureHeader;
+
         logger.info(
           {
             signatureLength: signature.length,
             bodyLength: rawBody.length,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Processing Stripe webhook'
         );
@@ -142,7 +146,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         );
 
         // Set appropriate status code
-        reply.status(result.statusCode);
+        void reply.status(result.statusCode);
 
         if (result.success) {
           logger.info(
@@ -151,7 +155,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
               message: result.message,
               userId: result.userId,
               role: result.role,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Stripe webhook processed successfully'
           );
@@ -165,7 +169,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
             {
               statusCode: result.statusCode,
               message: result.message,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Stripe webhook processing failed'
           );
@@ -181,12 +185,12 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Stripe webhook processing error'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -217,6 +221,8 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         const healthData = {
           status: 'healthy',
@@ -224,24 +230,19 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
           provider: 'stripe',
         };
 
-        logger.debug(
-          {
-            requestId: (request as any).requestId,
-          },
-          'Stripe webhook health check completed'
-        );
+        logger.debug({ requestId }, 'Stripe webhook health check completed');
 
         return healthData;
       } catch (error) {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Stripe webhook health check failed'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -276,6 +277,8 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         const configData = {
           provider: 'stripe',
@@ -289,19 +292,14 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
           idempotency: true,
         };
 
-        logger.debug(
-          {
-            requestId: (request as any).requestId,
-          },
-          'Stripe webhook config requested'
-        );
+        logger.debug({ requestId }, 'Stripe webhook config requested');
 
         return configData;
       } catch (error) {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Failed to get Stripe webhook config'
         );
@@ -318,4 +316,6 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Stripe webhook routes registered');
+
+  await Promise.resolve();
 };

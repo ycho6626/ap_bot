@@ -49,6 +49,16 @@ const reviewActionSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
+type ReviewActionInput = z.infer<typeof reviewActionSchema>;
+
+type ReviewCaseUpdate = {
+  status: 'approved' | 'rejected' | 'needs_revision';
+  updated_at: string;
+  feedback?: string;
+  corrected_answer?: string;
+  tags?: string[];
+};
+
 /**
  * Review routes for HiTL (Human-in-the-Loop) functionality
  */
@@ -162,6 +172,8 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         const requestData = z
           .object({
@@ -199,7 +211,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             question: requestData.question,
             examVariant: requestData.examVariant,
             trustScore: requestData.trustScore,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Submitting case for review'
         );
@@ -216,8 +228,8 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
                 exam_variant: requestData.examVariant,
                 trust_score: requestData.trustScore,
                 confidence: requestData.confidence,
-                sources: requestData.sources || [],
-                metadata: requestData.metadata || {},
+                sources: requestData.sources ?? [],
+                metadata: requestData.metadata ?? {},
                 status: 'pending',
               })
               .select()
@@ -241,12 +253,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           {
             caseId: reviewCase.id,
             question: requestData.question,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Review case created successfully'
         );
 
-        reply.status(201);
+        void reply.status(201);
         return {
           id: reviewCase.id,
           status: 'pending',
@@ -258,12 +270,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             {
               error: error.errors,
               body: request.body,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Review case validation failed'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid request parameters',
@@ -277,12 +289,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           {
             error: error instanceof Error ? error.message : 'Unknown error',
             body: request.body,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Failed to create review case'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -391,6 +403,8 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         const queryParams = z
           .object({
@@ -409,7 +423,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             examVariant: queryParams.examVariant,
             limit: queryParams.limit,
             offset: queryParams.offset,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Fetching review cases'
         );
@@ -432,21 +446,21 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           throw new Error(`Failed to fetch review cases: ${error.message}`);
         }
 
-        const cases = (data || []).map(case_ => ({
+        const cases = (data ?? []).map(case_ => ({
           id: case_.id,
           question: case_.question,
           answer: case_.answer,
           examVariant: case_.exam_variant,
           trustScore: case_.trust_score,
           confidence: case_.confidence,
-          sources: case_.sources || [],
-          metadata: case_.metadata || {},
+          sources: case_.sources ?? [],
+          metadata: case_.metadata ?? {},
           status: case_.status,
           created_at: case_.created_at,
           updated_at: case_.updated_at,
         }));
 
-        const total = count || 0;
+        const total = count ?? 0;
         const hasMore = queryParams.offset + queryParams.limit < total;
 
         logger.info(
@@ -454,7 +468,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             totalCases: total,
             returnedCases: cases.length,
             hasMore,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Review cases fetched successfully'
         );
@@ -474,12 +488,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             {
               error: error.errors,
               query: request.query,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Review cases query validation failed'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid query parameters',
@@ -493,12 +507,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           {
             error: error instanceof Error ? error.message : 'Unknown error',
             query: request.query,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Failed to fetch review cases'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -596,14 +610,19 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+      let requestData: ReviewActionInput | undefined;
+
       try {
-        const requestData = reviewActionSchema.parse(request.body);
+        const parsedRequest = reviewActionSchema.parse(request.body);
+        requestData = parsedRequest;
+        const actionRequest = parsedRequest;
 
         logger.info(
           {
-            caseId: requestData.caseId,
-            action: requestData.action,
-            requestId: (request as any).requestId,
+            caseId: actionRequest.caseId,
+            action: actionRequest.action,
+            requestId,
           },
           'Resolving review case'
         );
@@ -612,32 +631,32 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         const updatedCase = await withSpan(
           'review_resolve_case',
           async () => {
-            const updateData: any = {
+            const updateData: ReviewCaseUpdate = {
               status:
-                requestData.action === 'approve'
+                actionRequest.action === 'approve'
                   ? 'approved'
-                  : requestData.action === 'reject'
+                  : actionRequest.action === 'reject'
                     ? 'rejected'
                     : 'needs_revision',
               updated_at: new Date().toISOString(),
             };
 
-            if (requestData.feedback) {
-              updateData.feedback = requestData.feedback;
+            if (actionRequest.feedback) {
+              updateData.feedback = actionRequest.feedback;
             }
 
-            if (requestData.correctedAnswer) {
-              updateData.corrected_answer = requestData.correctedAnswer;
+            if (actionRequest.correctedAnswer) {
+              updateData.corrected_answer = actionRequest.correctedAnswer;
             }
 
-            if (requestData.tags) {
-              updateData.tags = requestData.tags;
+            if (actionRequest.tags) {
+              updateData.tags = actionRequest.tags;
             }
 
             const { data, error } = await supabaseService
               .from('review_case')
               .update(updateData)
-              .eq('id', requestData.caseId)
+              .eq('id', actionRequest.caseId)
               .select()
               .single();
 
@@ -653,8 +672,8 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           },
           {
             attributes: {
-              'review.case_id': requestData.caseId,
-              'review.action': requestData.action,
+              'review.case_id': actionRequest.caseId,
+              'review.action': actionRequest.action,
             },
           }
         );
@@ -664,11 +683,11 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           'review_create_action',
           async () => {
             const { error } = await supabaseService.from('review_action').insert({
-              case_id: requestData.caseId,
-              action: requestData.action,
-              feedback: requestData.feedback,
-              corrected_answer: requestData.correctedAnswer,
-              tags: requestData.tags || [],
+              case_id: actionRequest.caseId,
+              action: actionRequest.action,
+              feedback: actionRequest.feedback,
+              corrected_answer: actionRequest.correctedAnswer,
+              tags: actionRequest.tags ?? [],
               created_at: new Date().toISOString(),
             });
 
@@ -678,18 +697,18 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           },
           {
             attributes: {
-              'review.case_id': requestData.caseId,
-              'review.action': requestData.action,
+              'review.case_id': actionRequest.caseId,
+              'review.action': actionRequest.action,
             },
           }
         );
 
         logger.info(
           {
-            caseId: requestData.caseId,
-            action: requestData.action,
+            caseId: actionRequest.caseId,
+            action: actionRequest.action,
             newStatus: updatedCase.status,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Review case resolved successfully'
         );
@@ -697,7 +716,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         return {
           id: updatedCase.id,
           status: updatedCase.status,
-          message: `Case ${requestData.action}d successfully`,
+          message: `Case ${actionRequest.action}d successfully`,
         };
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -705,12 +724,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
             {
               error: error.errors,
               body: request.body,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Review action validation failed'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid request parameters',
@@ -723,13 +742,13 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         if (error instanceof Error && error.message.includes('not found')) {
           logger.warn(
             {
-              caseId: (request.body as any)?.caseId,
-              requestId: (request as any).requestId,
+              caseId: requestData?.caseId,
+              requestId,
             },
             'Review case not found'
           );
 
-          reply.status(404);
+          void reply.status(404);
           return {
             error: {
               message: 'Review case not found',
@@ -742,12 +761,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           {
             error: error instanceof Error ? error.message : 'Unknown error',
             body: request.body,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Failed to resolve review case'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -759,4 +778,6 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Review routes registered');
+
+  await Promise.resolve();
 };

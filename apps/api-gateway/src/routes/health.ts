@@ -31,6 +31,7 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
     },
     async (request, reply) => {
       const startTime = Date.now();
+      const requestId = request.requestId ?? request.id;
 
       try {
         const healthData = {
@@ -44,7 +45,7 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         logger.debug(
           {
             responseTime: Date.now() - startTime,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Health check completed'
         );
@@ -54,12 +55,12 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Health check failed'
         );
 
-        reply.status(503);
+        void reply.status(503);
         return {
           status: 'unhealthy',
           timestamp: new Date().toISOString(),
@@ -118,6 +119,7 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
     },
     async (request, reply) => {
       const startTime = Date.now();
+      const requestId = request.requestId ?? request.id;
 
       try {
         // Check dependencies
@@ -148,7 +150,7 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         logger.debug(
           {
             responseTime: Date.now() - startTime,
-            requestId: (request as any).requestId,
+            requestId,
             dependencies,
           },
           'Detailed health check completed'
@@ -159,12 +161,12 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Detailed health check failed'
         );
 
-        reply.status(503);
+        void reply.status(503);
         return {
           status: 'unhealthy',
           timestamp: new Date().toISOString(),
@@ -207,6 +209,8 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         // Check if the service is ready to accept traffic
         // This would include checking database connections, external services, etc.
@@ -216,24 +220,19 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
           timestamp: new Date().toISOString(),
         };
 
-        logger.debug(
-          {
-            requestId: (request as any).requestId,
-          },
-          'Readiness check completed'
-        );
+        logger.debug({ requestId }, 'Readiness check completed');
 
         return readyData;
       } catch (error) {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Readiness check failed'
         );
 
-        reply.status(503);
+        void reply.status(503);
         return {
           status: 'not ready',
           timestamp: new Date().toISOString(),
@@ -271,4 +270,6 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Health routes registered');
+
+  await Promise.resolve();
 };

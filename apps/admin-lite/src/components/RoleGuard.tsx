@@ -60,8 +60,7 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
         }
 
         setUserRole(authResult.payload.role);
-      } catch (err) {
-        console.error('Failed to check user role:', err);
+      } catch {
         setError('Failed to verify user permissions');
       } finally {
         setLoading(false);
@@ -69,7 +68,7 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
     };
 
     void checkUserRole();
-  }, [requiredRole]);
+  }, [requiredRole, fallback]);
 
   if (loading) {
     return (
@@ -146,8 +145,7 @@ export function useUserRole() {
         } else {
           setUserRole(null);
         }
-      } catch (err) {
-        console.error('Failed to check user role:', err);
+      } catch {
         setUserRole(null);
       } finally {
         setLoading(false);

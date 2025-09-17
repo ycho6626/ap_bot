@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { hybridRetrieval } from '@ap/tutor/retrieval';
+import type { HybridSearchOptions } from '@ap/tutor/retrieval';
 
 const logger = createLogger('kb-routes');
 
@@ -17,6 +18,10 @@ const searchRequestSchema = z.object({
   minScore: z.number().min(0).max(1).default(0.1),
   includePartitions: z.array(z.string()).optional(),
   excludePartitions: z.array(z.string()).optional(),
+});
+
+const documentParamsSchema = z.object({
+  id: z.string(),
 });
 
 /**
@@ -158,22 +163,45 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
     },
     async (request, reply) => {
       const startTime = Date.now();
+      const requestId = request.requestId ?? request.id;
+      type RawSearchQuerystring = {
+        subject?: string;
+        examVariant?: 'calc_ab' | 'calc_bc';
+        query?: string;
+        limit?: string | number;
+        minScore?: string | number;
+        includePartitions?: string | string[];
+        excludePartitions?: string | string[];
+      };
+
+      const rawQuery = request.query as RawSearchQuerystring;
+      const toArray = (value?: string | string[]) => {
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (typeof value === 'string') {
+          return value
+            .split(',')
+            .map(partition => partition.trim())
+            .filter(Boolean);
+        }
+        return undefined;
+      };
 
       try {
         // Parse and validate query parameters
-        const query = request.query as Record<string, string | undefined>;
         const queryParams = searchRequestSchema.parse({
-          subject: query['subject'],
-          examVariant: query['examVariant'],
-          query: query['query'],
-          limit: query['limit'] ? parseInt(query['limit'], 10) : undefined,
-          minScore: query['minScore'] ? parseFloat(query['minScore']) : undefined,
-          includePartitions: query['includePartitions']
-            ? query['includePartitions'].split(',').map(p => p.trim())
-            : undefined,
-          excludePartitions: query['excludePartitions']
-            ? query['excludePartitions'].split(',').map(p => p.trim())
-            : undefined,
+          subject: rawQuery.subject,
+          examVariant: rawQuery.examVariant,
+          query: rawQuery.query,
+          limit:
+            typeof rawQuery.limit === 'string'
+              ? Number.parseInt(rawQuery.limit, 10)
+              : rawQuery.limit,
+          minScore:
+            typeof rawQuery.minScore === 'string'
+              ? Number.parseFloat(rawQuery.minScore)
+              : rawQuery.minScore,
+          includePartitions: toArray(rawQuery.includePartitions),
+          excludePartitions: toArray(rawQuery.excludePartitions),
         });
 
         logger.info(
@@ -181,7 +209,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
             query: queryParams.query,
             examVariant: queryParams.examVariant,
             limit: queryParams.limit,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Starting knowledge base search'
         );
@@ -190,7 +218,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         const results = await withSpan(
           'kb_search',
           async () => {
-            const searchOptions: any = {
+            const searchOptions: HybridSearchOptions = {
               examVariant: queryParams.examVariant,
             };
 
@@ -213,7 +241,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         );
 
         const searchTime = Date.now() - startTime;
-        const maxScore = results.length > 0 ? results[0]?.score || 0 : 0;
+        const maxScore = results.length > 0 ? (results[0]?.score ?? 0) : 0;
 
         const response = {
           results: results.map(result => ({
@@ -248,7 +276,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
             totalResults: results.length,
             maxScore,
             searchTime,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Knowledge base search completed'
         );
@@ -261,14 +289,14 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
           logger.warn(
             {
               error: error.errors,
-              query: request.query,
+              query: rawQuery,
               searchTime,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Knowledge base search validation failed'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid request parameters',
@@ -281,14 +309,14 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            query: request.query,
+            query: rawQuery,
             searchTime,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Knowledge base search failed'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -364,20 +392,24 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+      let documentId: string | undefined;
+
       try {
-        const { id } = request.params as { id: string };
+        const { id } = documentParamsSchema.parse(request.params);
+        documentId = id;
 
         logger.info(
           {
             documentId: id,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Fetching knowledge base document'
         );
 
         // TODO: Implement document fetching from Supabase
         // For now, return a 404
-        reply.status(404);
+        void reply.status(404);
         return {
           error: {
             message: 'Document not found',
@@ -388,13 +420,13 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            documentId: (request.params as any)?.id,
-            requestId: (request as any).requestId,
+            documentId,
+            requestId,
           },
           'Failed to fetch knowledge base document'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -406,4 +438,6 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Knowledge base routes registered');
+
+  await Promise.resolve();
 };

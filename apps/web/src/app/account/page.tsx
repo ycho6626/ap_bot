@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 // import { Separator } from '@/components/ui/separator';
 import toast from 'react-hot-toast';
+import { reportError } from '@/lib/logging';
 
 interface PricingPlan {
   id: string;
@@ -50,7 +51,7 @@ export default function AccountPage() {
       const userProfile = await getUserProfile();
       setUser(userProfile);
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      reportError('Error loading user profile:', error);
       // For demo purposes, create a mock user
       setUser({
         id: 'demo-user',
@@ -68,7 +69,7 @@ export default function AccountPage() {
       const pricingPlans = await getPricingPlans();
       setPlans(pricingPlans);
     } catch (error) {
-      console.error('Error loading pricing plans:', error);
+      reportError('Error loading pricing plans:', error);
       // Mock pricing plans for demo
       setPlans([
         {
@@ -128,7 +129,7 @@ export default function AccountPage() {
       window.location.assign(session.url);
       toast.success('Redirecting to checkout...');
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      reportError('Error creating checkout session:', error);
       toast.error('Failed to start checkout. Please try again.');
     } finally {
       setIsCreatingCheckout(null);
@@ -141,7 +142,7 @@ export default function AccountPage() {
       window.location.assign(portal.url);
       toast.success('Opening billing portal...');
     } catch (error) {
-      console.error('Error opening billing portal:', error);
+      reportError('Error opening billing portal:', error);
       toast.error('Failed to open billing portal. Please try again.');
     }
   };

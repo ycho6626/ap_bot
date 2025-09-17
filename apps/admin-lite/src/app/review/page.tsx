@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ReviewApi, type ReviewCase } from '@/lib/api';
 import { ReviewCaseList } from '@/components/ReviewCaseList';
 import { ReviewCaseDetail } from '@/components/ReviewCaseDetail';
@@ -30,7 +30,7 @@ export default function ReviewPage() {
     hasMore: false,
   });
 
-  const loadCases = async () => {
+  const loadCases = useCallback(async () => {
     try {
       setLoading(true);
       const apiFilters = Object.fromEntries(
@@ -40,16 +40,15 @@ export default function ReviewPage() {
       setCases(response.cases);
       setPagination(response.pagination);
     } catch (error) {
-      console.error('Failed to load review cases:', error);
       toast.error('Failed to load review cases');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     void loadCases();
-  }, [filters]);
+  }, [loadCases]);
 
   const handleCaseSelect = (case_: ReviewCase) => {
     setSelectedCase(case_);
@@ -81,7 +80,6 @@ export default function ReviewPage() {
         setSelectedCase(null);
       }
     } catch (error) {
-      console.error('Failed to resolve case:', error);
       toast.error('Failed to resolve case');
     }
   };

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import katex from 'katex';
 import { cn } from '@/lib/utils';
+import { reportError, reportWarning } from '@/lib/logging';
 
 interface MathProps {
   content: string;
@@ -76,7 +77,7 @@ export function Math({
               );
               container.appendChild(latexSpan);
             } catch (katexError) {
-              console.warn('KaTeX rendering error:', katexError);
+              reportWarning('KaTeX rendering error:', katexError);
               if (errorFallback) {
                 const fallbackSpan = document.createElement('span');
                 fallbackSpan.textContent = latexContent;
@@ -95,7 +96,7 @@ export function Math({
         partIndex++;
       }
     } catch (error) {
-      console.error('Math component error:', error);
+      reportError('Math component error:', error);
       if (errorFallback) {
         setError('Failed to render mathematical content');
       }

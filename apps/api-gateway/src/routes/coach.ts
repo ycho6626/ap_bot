@@ -170,6 +170,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
     },
     async (request, reply) => {
       const startTime = Date.now();
+      const requestId = request.requestId ?? request.id;
 
       try {
         // Parse and validate request body
@@ -181,7 +182,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
             examVariant: requestData.examVariant,
             mode: requestData.mode,
             sessionId: requestData.context?.sessionId,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Processing coach request'
         );
@@ -220,8 +221,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         const processingTime = Date.now() - startTime;
 
         // Set custom headers for answer verification status
-        reply.header('X-Answer-Verified', response.verified.toString());
-        reply.header('X-Answer-Trust', response.trustScore.toString());
+        void reply.header('X-Answer-Verified', response.verified.toString());
+        void reply.header('X-Answer-Trust', response.trustScore.toString());
 
         // Update metadata with actual processing time
         response.metadata.processingTime = processingTime;
@@ -233,7 +234,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
             verified: response.verified,
             trustScore: response.trustScore,
             processingTime,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Coach request completed'
         );
@@ -248,12 +249,12 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
               error: error.errors,
               body: request.body,
               processingTime,
-              requestId: (request as any).requestId,
+              requestId,
             },
             'Coach request validation failed'
           );
 
-          reply.status(400);
+          void reply.status(400);
           return {
             error: {
               message: 'Invalid request parameters',
@@ -268,12 +269,12 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
             error: error instanceof Error ? error.message : 'Unknown error',
             body: request.body,
             processingTime,
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Coach request failed'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -312,6 +313,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         // TODO: Add actual health checks for dependencies
         const healthData = {
@@ -325,24 +328,19 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           },
         };
 
-        logger.debug(
-          {
-            requestId: (request as any).requestId,
-          },
-          'Coach health check completed'
-        );
+        logger.debug({ requestId }, 'Coach health check completed');
 
         return healthData;
       } catch (error) {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Coach health check failed'
         );
 
-        reply.status(503);
+        void reply.status(503);
         return {
           status: 'unhealthy',
           timestamp: new Date().toISOString(),
@@ -390,6 +388,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
       },
     },
     async (request, reply) => {
+      const requestId = request.requestId ?? request.id;
+
       try {
         const configData = {
           vam: {
@@ -406,24 +406,19 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           supportedVariants: ['calc_ab', 'calc_bc'],
         };
 
-        logger.debug(
-          {
-            requestId: (request as any).requestId,
-          },
-          'Coach config requested'
-        );
+        logger.debug({ requestId }, 'Coach config requested');
 
         return configData;
       } catch (error) {
         logger.error(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
-            requestId: (request as any).requestId,
+            requestId,
           },
           'Failed to get coach config'
         );
 
-        reply.status(500);
+        void reply.status(500);
         return {
           error: {
             message: 'Internal server error',
@@ -435,4 +430,6 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
   );
 
   logger.info('Coach routes registered');
+
+  await Promise.resolve();
 };

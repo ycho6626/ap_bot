@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
+import { reportWarning } from '@/lib/logging';
 
 interface KaTeXRendererProps {
   content: string;
@@ -60,7 +61,7 @@ export function KaTeXRenderer({
             latexSpan.className = isInline ? 'katex-inline' : 'katex-display';
             container.appendChild(latexSpan);
           } catch (error) {
-            console.warn('KaTeX rendering error:', error);
+            reportWarning('KaTeX rendering error:', error);
             // Fallback to plain text
             const fallbackSpan = document.createElement('span');
             fallbackSpan.textContent = latexContent;
