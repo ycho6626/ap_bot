@@ -60,7 +60,7 @@ jobs:
           run_install: false
           cache: true
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test --coverage
+      - run: pnpm coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -83,7 +83,7 @@ jobs:
           cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm test:e2e
+      - run: pnpm --filter @ap/web test:e2e:smoke:ci
 
   python-tests:
     name: Python Tests
