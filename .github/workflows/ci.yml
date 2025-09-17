@@ -22,6 +22,7 @@ jobs:
           run_install: false
           cache: true
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ap/shared build
       - run: pnpm lint
       - run: pnpm typecheck
 
