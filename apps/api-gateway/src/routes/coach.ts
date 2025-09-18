@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { vamCoach, type CoachContext } from '@ap/tutor/coach';
+import { evaluateQuestion } from '../services/questionGuard';
 
 const logger = createLogger('coach-routes');
 
@@ -187,6 +188,50 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           'Processing coach request'
         );
 
+        const guardEvaluation = evaluateQuestion(requestData.question);
+
+        if (guardEvaluation.safety.status === 'unsafe') {
+          logger.warn(
+            {
+              requestId,
+              category: guardEvaluation.safety.category,
+            },
+            'Blocked unsafe coach request'
+          );
+
+          void reply.status(403);
+          return {
+            error: {
+              message:
+                "I'm sorry, but I can't help with that request. Please reach out to a trusted adult or professional for support.",
+              statusCode: 403,
+              code: 'UNSAFE_CONTENT',
+              details: guardEvaluation.safety,
+            },
+          };
+        }
+
+        if (guardEvaluation.classification.label !== 'in_scope') {
+          logger.info(
+            {
+              requestId,
+              classification: guardEvaluation.classification,
+            },
+            'Declined non-calculus coach request'
+          );
+
+          void reply.status(422);
+          return {
+            error: {
+              message:
+                'The AP Calculus Coach can only answer AP Calculus AB/BC questions. Try rephrasing with calculus-specific details.',
+              statusCode: 422,
+              code: 'OUT_OF_SCOPE',
+              details: guardEvaluation.classification,
+            },
+          };
+        }
+
         // Create coach context
         const context: CoachContext = {
           examVariant: requestData.examVariant,
@@ -214,6 +259,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
               'coach.mode': requestData.mode,
               'coach.question_length': requestData.question.length,
               'coach.has_context': !!requestData.context,
+              'coach.guard.label': guardEvaluation.classification.label,
+              'coach.guard.score': guardEvaluation.classification.score,
             },
           }
         );

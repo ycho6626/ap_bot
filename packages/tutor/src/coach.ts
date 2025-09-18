@@ -111,36 +111,42 @@ export class VAMCoach {
       }
 
       // Try canonical-first approach
-      let response: CoachResponse;
+      let response: CoachResponse | null = null;
       if (this.config.enableCanonicalFirst) {
-        response = await this.tryCanonicalFirst(question, context);
-        if (response.verified && response.trustScore >= this.config.minTrustThreshold) {
-          this.cacheResponse(cacheKey, response);
-          return response;
+        const canonicalResponse = await this.tryCanonicalFirst(question, context);
+        if (canonicalResponse) {
+          if (canonicalResponse.verified && canonicalResponse.trustScore >= this.config.minTrustThreshold) {
+            this.cacheResponse(cacheKey, canonicalResponse);
+            return canonicalResponse;
+          }
+          response = canonicalResponse;
         }
       }
 
       // Try retrieval + generation approach
       if (this.config.enableRetrieval) {
-        response = await this.tryRetrievalGeneration(question, context);
-        if (response.verified && response.trustScore >= this.config.minTrustThreshold) {
-          this.cacheResponse(cacheKey, response);
-          return response;
+        const retrievalResponse = await this.tryRetrievalGeneration(question, context);
+        if (retrievalResponse) {
+          if (retrievalResponse.verified && retrievalResponse.trustScore >= this.config.minTrustThreshold) {
+            this.cacheResponse(cacheKey, retrievalResponse);
+            return retrievalResponse;
+          }
+          response = retrievalResponse;
         }
       }
 
       // Try corrective decode if below threshold
-      if (response!.trustScore < this.config.minTrustThreshold && this.config.maxRetries > 0) {
-        response = await this.tryCorrectiveDecode(question, context, response!);
+      if (response && response.trustScore < this.config.minTrustThreshold && this.config.maxRetries > 0) {
+        response = await this.tryCorrectiveDecode(question, context, response);
       }
 
-      // If still below threshold, abstain with suggestions
-      if (response!.trustScore < this.config.minTrustThreshold) {
+      // If still below threshold or no viable response, abstain with suggestions
+      if (!response || response.trustScore < this.config.minTrustThreshold) {
         response = await this.abstainWithSuggestions(question, context);
       }
 
-      this.cacheResponse(cacheKey, response!);
-      return response!;
+      this.cacheResponse(cacheKey, response);
+      return response;
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
@@ -160,7 +166,10 @@ export class VAMCoach {
    * @param context - Coach context
    * @returns Coach response
    */
-  private async tryCanonicalFirst(question: string, context: CoachContext): Promise<CoachResponse> {
+  private async tryCanonicalFirst(
+    question: string,
+    context: CoachContext
+  ): Promise<CoachResponse | null> {
     this.logger.debug({ question }, 'Trying canonical-first approach');
 
     try {
@@ -176,7 +185,8 @@ export class VAMCoach {
       const canonical = await canonicalManager.findBestCanonical(question, searchOptions);
 
       if (!canonical) {
-        throw new Error('No canonical solution found');
+        this.logger.debug({ question }, 'No canonical solution match');
+        return null;
       }
 
       // Format the canonical solution
@@ -244,7 +254,7 @@ export class VAMCoach {
   private async tryRetrievalGeneration(
     question: string,
     context: CoachContext
-  ): Promise<CoachResponse> {
+  ): Promise<CoachResponse | null> {
     this.logger.debug({ question }, 'Trying retrieval + generation approach');
 
     try {
@@ -256,7 +266,8 @@ export class VAMCoach {
       });
 
       if (searchResults.length === 0) {
-        throw new Error('No relevant documents found');
+        this.logger.debug({ question }, 'No retrieval documents found');
+        return null;
       }
 
       // Generate answer using LLM
@@ -321,7 +332,7 @@ export class VAMCoach {
         { error: error instanceof Error ? error.message : String(error) },
         'Retrieval + generation approach failed'
       );
-      throw error;
+      return null;
     }
   }
 
@@ -407,7 +418,7 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
         { error: error instanceof Error ? error.message : String(error) },
         'Corrective decode failed'
       );
-      throw error;
+      return previousResponse;
     }
   }
 
@@ -612,7 +623,11 @@ Issues identified: ${previousResponse.sources.map(s => s.title).join(', ')}
    * @param key - Cache key
    * @param response - Response to cache
    */
-  private cacheResponse(key: string, response: CoachResponse): void {
+  private cacheResponse(key: string, response: CoachResponse | null): void {
+    if (!response) {
+      return;
+    }
+
     if (this.config.cacheVerifiedOnly && !response.verified) {
       return;
     }

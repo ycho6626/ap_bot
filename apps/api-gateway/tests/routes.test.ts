@@ -297,6 +297,40 @@ describe('API Gateway Routes', () => {
       expect(response.headers['x-answer-trust']).toBe('0.95');
     });
 
+    it('should decline non-calculus questions with 422', async () => {
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/coach',
+        payload: {
+          question: 'Can you tell me a joke about computers?',
+          examVariant: 'calc_ab',
+          mode: 'vam',
+        },
+      });
+
+      expect(response.statusCode).toBe(422);
+      const body = JSON.parse(response.body);
+      expect(body.error.code).toBe('OUT_OF_SCOPE');
+      expect(body.error.details.label).toBe('out_of_scope');
+    });
+
+    it('should block unsafe questions with 403', async () => {
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/coach',
+        payload: {
+          question: 'I want to hurt myself, what should I do?',
+          examVariant: 'calc_ab',
+          mode: 'vam',
+        },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.body);
+      expect(body.error.code).toBe('UNSAFE_CONTENT');
+      expect(body.error.details.category).toBe('self_harm');
+    });
+
     it('should return 400 for missing question', async () => {
       const requestBody = {
         examVariant: 'calc_ab',
