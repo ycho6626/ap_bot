@@ -1,36 +1,28 @@
 import { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { vamCoach, type CoachContext } from '@ap/tutor/coach';
 import { evaluateQuestion } from '../services/questionGuard';
+import {
+  coachConfigSchema,
+  coachHealthSchema,
+  coachRequestSchema,
+  coachResponseSchema,
+  coachErrorResponseSchema,
+  healthUnhealthySchema,
+  makeErrorResponse,
+} from '../schemas';
+import { z } from 'zod';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('coach-routes');
-
-/**
- * Coach request schema
- */
-const coachRequestSchema = z.object({
-  subject: z.literal('calc').default('calc'),
-  examVariant: z.enum(['calc_ab', 'calc_bc']).default('calc_ab'),
-  mode: z.enum(['vam', 'standard']).default('vam'),
-  question: z.string().min(1, 'Question is required').max(2000, 'Question too long'),
-  context: z
-    .object({
-      topic: z.string().optional(),
-      subtopic: z.string().optional(),
-      difficulty: z.string().optional(),
-      studentLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-      previousQuestions: z.array(z.string()).optional(),
-      sessionId: z.string().optional(),
-    })
-    .optional(),
-});
 
 /**
  * Coach routes for VAM (Verified Answer Mode) orchestration
  */
 export const coachRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Main coach endpoint
   fastify.post(
     '/',
@@ -38,134 +30,11 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Process a student question using VAM (Verified Answer Mode)',
         tags: ['coach'],
-        body: {
-          type: 'object',
-          properties: {
-            subject: {
-              type: 'string',
-              enum: ['calc'],
-              default: 'calc',
-              description: 'Subject (currently only calc supported)',
-            },
-            examVariant: {
-              type: 'string',
-              enum: ['calc_ab', 'calc_bc'],
-              default: 'calc_ab',
-              description: 'Exam variant',
-            },
-            mode: {
-              type: 'string',
-              enum: ['vam', 'standard'],
-              default: 'vam',
-              description: 'Processing mode',
-            },
-            question: {
-              type: 'string',
-              minLength: 1,
-              maxLength: 2000,
-              description: 'Student question',
-            },
-            context: {
-              type: 'object',
-              properties: {
-                topic: {
-                  type: 'string',
-                  description: 'Topic context',
-                },
-                subtopic: {
-                  type: 'string',
-                  description: 'Subtopic context',
-                },
-                difficulty: {
-                  type: 'string',
-                  description: 'Difficulty level',
-                },
-                studentLevel: {
-                  type: 'string',
-                  enum: ['beginner', 'intermediate', 'advanced'],
-                  description: 'Student level',
-                },
-                previousQuestions: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Previous questions in session',
-                },
-                sessionId: {
-                  type: 'string',
-                  description: 'Session identifier',
-                },
-              },
-              description: 'Additional context for the question',
-            },
-          },
-          required: ['question'],
-        },
+        body: coachRequestSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              answer: { type: 'string' },
-              verified: { type: 'boolean' },
-              trustScore: { type: 'number' },
-              confidence: { type: 'number' },
-              sources: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    type: {
-                      type: 'string',
-                      enum: ['canonical', 'retrieval', 'generated'],
-                    },
-                    id: { type: 'string' },
-                    title: { type: 'string' },
-                    snippet: { type: 'string' },
-                    score: { type: 'number' },
-                  },
-                },
-              },
-              suggestions: {
-                type: 'array',
-                items: { type: 'string' },
-              },
-              metadata: {
-                type: 'object',
-                properties: {
-                  examVariant: { type: 'string' },
-                  topic: { type: 'string' },
-                  subtopic: { type: 'string' },
-                  difficulty: { type: 'string' },
-                  processingTime: { type: 'number' },
-                  retryCount: { type: 'number' },
-                },
-              },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                  validation: { type: 'object' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: coachResponseSchema,
+          400: coachErrorResponseSchema,
+          500: coachErrorResponseSchema,
         },
       },
     },
@@ -200,15 +69,11 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(403);
-          return {
-            error: {
-              message:
-                "I'm sorry, but I can't help with that request. Please reach out to a trusted adult or professional for support.",
-              statusCode: 403,
-              code: 'UNSAFE_CONTENT',
-              details: guardEvaluation.safety,
-            },
-          };
+          return makeErrorResponse(
+            403,
+            "I'm sorry, but I can't help with that request. Please reach out to a trusted adult or professional for support.",
+            { code: 'UNSAFE_CONTENT', details: guardEvaluation.safety }
+          );
         }
 
         if (guardEvaluation.classification.label !== 'in_scope') {
@@ -221,15 +86,11 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(422);
-          return {
-            error: {
-              message:
-                'The AP Calculus Coach can only answer AP Calculus AB/BC questions. Try rephrasing with calculus-specific details.',
-              statusCode: 422,
-              code: 'OUT_OF_SCOPE',
-              details: guardEvaluation.classification,
-            },
-          };
+          return makeErrorResponse(
+            422,
+            'The AP Calculus Coach can only answer AP Calculus AB/BC questions. Try rephrasing with calculus-specific details.',
+            { code: 'OUT_OF_SCOPE', details: guardEvaluation.classification }
+          );
         }
 
         // Create coach context
@@ -302,13 +163,9 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid request parameters',
-              statusCode: 400,
-              validation: error.errors,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid request parameters', {
+            validation: error.errors,
+          });
         }
 
         logger.error(
@@ -322,12 +179,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -340,22 +192,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         description: 'Health check for coach service',
         tags: ['coach'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              services: {
-                type: 'object',
-                properties: {
-                  vam: { type: 'string' },
-                  retrieval: { type: 'string' },
-                  verification: { type: 'string' },
-                  llm: { type: 'string' },
-                },
-              },
-            },
-          },
+          200: coachHealthSchema,
+          503: healthUnhealthySchema,
         },
       },
     },
@@ -388,11 +226,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(503);
-        return {
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
+        return makeErrorResponse(503, error instanceof Error ? error.message : 'Unknown error');
       }
     }
   );
@@ -405,32 +239,8 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         description: 'Get coach configuration',
         tags: ['coach'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              vam: {
-                type: 'object',
-                properties: {
-                  minTrustThreshold: { type: 'number' },
-                  maxRetries: { type: 'number' },
-                  enableCanonicalFirst: { type: 'boolean' },
-                  enableRetrieval: { type: 'boolean' },
-                  enableVerification: { type: 'boolean' },
-                  enablePostprocessing: { type: 'boolean' },
-                  cacheVerifiedOnly: { type: 'boolean' },
-                  suggestionsCount: { type: 'number' },
-                },
-              },
-              supportedSubjects: {
-                type: 'array',
-                items: { type: 'string' },
-              },
-              supportedVariants: {
-                type: 'array',
-                items: { type: 'string' },
-              },
-            },
-          },
+          200: coachConfigSchema,
+          500: coachErrorResponseSchema,
         },
       },
     },
@@ -466,12 +276,7 @@ export const coachRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );

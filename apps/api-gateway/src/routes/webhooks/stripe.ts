@@ -2,6 +2,15 @@ import { FastifyPluginAsync } from 'fastify';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { processStripeWebhook } from '@ap/payments/stripe';
+import {
+  stripeWebhookHeadersSchema,
+  stripeWebhookErrorSchema,
+  stripeWebhookSuccessSchema,
+  stripeWebhookHealthSchema,
+  stripeWebhookConfigSchema,
+  makeErrorResponse,
+} from '../../schemas';
+import { ensureErrorHandling } from '../../utils/errorHandling';
 
 const logger = createLogger('stripe-webhook-routes');
 
@@ -9,6 +18,8 @@ const logger = createLogger('stripe-webhook-routes');
  * Stripe webhook routes
  */
 export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Stripe webhook endpoint
   fastify.post(
     '/stripe',
@@ -16,60 +27,13 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Handle Stripe webhook events',
         tags: ['webhooks'],
-        headers: {
-          type: 'object',
-          properties: {
-            'stripe-signature': {
-              type: 'string',
-              description: 'Stripe signature for webhook verification',
-            },
-          },
-          required: ['stripe-signature'],
-        },
+        // Headers schema is added for documentation only; Fastify validates using raw body.
+        headers: stripeWebhookHeadersSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              message: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
-          401: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: stripeWebhookSuccessSchema,
+          400: stripeWebhookErrorSchema,
+          401: stripeWebhookErrorSchema,
+          500: stripeWebhookErrorSchema,
         },
       },
       config: {
@@ -92,12 +56,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'No raw body available',
-              statusCode: 400,
-            },
-          };
+          return makeErrorResponse(400, 'No raw body available');
         }
 
         // Get Stripe signature from headers
@@ -111,12 +70,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Missing Stripe signature header',
-              statusCode: 400,
-            },
-          };
+          return makeErrorResponse(400, 'Missing Stripe signature header');
         }
 
         const signature = signatureHeader;
@@ -174,29 +128,21 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
             'Stripe webhook processing failed'
           );
 
-          return {
-            error: {
-              message: result.message,
-              statusCode: result.statusCode,
-            },
-          };
-        }
-      } catch (error) {
-        logger.error(
-          {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            requestId,
-          },
-          'Stripe webhook processing error'
-        );
+          return makeErrorResponse(result.statusCode, result.message, {
+            code: 'STRIPE_WEBHOOK_FAILED',
+          });
+      }
+    } catch (error) {
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          requestId,
+        },
+        'Stripe webhook processing error'
+      );
 
-        void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+      void reply.status(500);
+      return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -209,14 +155,8 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         description: 'Health check for Stripe webhook endpoint',
         tags: ['webhooks'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              provider: { type: 'string' },
-            },
-          },
+          200: stripeWebhookHealthSchema,
+          500: stripeWebhookErrorSchema,
         },
       },
     },
@@ -243,12 +183,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -261,18 +196,8 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         description: 'Get Stripe webhook configuration',
         tags: ['webhooks'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              provider: { type: 'string' },
-              supportedEvents: {
-                type: 'array',
-                items: { type: 'string' },
-              },
-              signatureVerification: { type: 'boolean' },
-              idempotency: { type: 'boolean' },
-            },
-          },
+          200: stripeWebhookConfigSchema,
+          500: stripeWebhookErrorSchema,
         },
       },
     },
@@ -305,12 +230,7 @@ export const stripeWebhookRoutes: FastifyPluginAsync = async fastify => {
         );
 
         reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );

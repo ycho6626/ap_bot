@@ -1,33 +1,27 @@
 import { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { hybridRetrieval } from '@ap/tutor/retrieval';
 import type { HybridSearchOptions } from '@ap/tutor/retrieval';
+import {
+  knowledgeSearchRequestSchema,
+  knowledgeSearchResponseSchema,
+  knowledgeErrorResponseSchema,
+  knowledgeDocumentParamsSchema,
+  knowledgeDocumentResponseSchema,
+  makeErrorResponse,
+} from '../schemas';
+import { z } from 'zod';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('kb-routes');
-
-/**
- * Knowledge base search request schema
- */
-const searchRequestSchema = z.object({
-  subject: z.literal('calc').default('calc'),
-  examVariant: z.enum(['calc_ab', 'calc_bc']).default('calc_ab'),
-  query: z.string().min(1, 'Query is required').max(500, 'Query too long'),
-  limit: z.number().int().min(1).max(50).default(10),
-  minScore: z.number().min(0).max(1).default(0.1),
-  includePartitions: z.array(z.string()).optional(),
-  excludePartitions: z.array(z.string()).optional(),
-});
-
-const documentParamsSchema = z.object({
-  id: z.string(),
-});
 
 /**
  * Knowledge base search routes
  */
 export const kbRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Search knowledge base
   fastify.get(
     '/search',
@@ -35,129 +29,11 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Search the knowledge base for relevant content',
         tags: ['knowledge-base'],
-        querystring: {
-          type: 'object',
-          properties: {
-            subject: {
-              type: 'string',
-              enum: ['calc'],
-              default: 'calc',
-              description: 'Subject to search (currently only calc supported)',
-            },
-            examVariant: {
-              type: 'string',
-              enum: ['calc_ab', 'calc_bc'],
-              default: 'calc_ab',
-              description: 'Exam variant to search for',
-            },
-            query: {
-              type: 'string',
-              minLength: 1,
-              maxLength: 500,
-              description: 'Search query',
-            },
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 50,
-              default: 10,
-              description: 'Maximum number of results to return',
-            },
-            minScore: {
-              type: 'number',
-              minimum: 0,
-              maximum: 1,
-              default: 0.1,
-              description: 'Minimum relevance score for results',
-            },
-            includePartitions: {
-              type: 'array',
-              items: { type: 'string' },
-              description:
-                'Partitions to include in search (public_kb, paraphrased_kb, private_kb)',
-            },
-            excludePartitions: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Partitions to exclude from search',
-            },
-          },
-          required: ['query'],
-        },
+        querystring: knowledgeSearchRequestSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              results: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    document: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string' },
-                        content: { type: 'string' },
-                        subject: { type: 'string' },
-                        exam_variant: { type: ['string', 'null'] },
-                        partition: { type: 'string' },
-                        topic: { type: ['string', 'null'] },
-                        subtopic: { type: ['string', 'null'] },
-                        created_at: { type: 'string' },
-                        updated_at: { type: 'string' },
-                      },
-                    },
-                    score: { type: 'number' },
-                    snippet: { type: 'string' },
-                    provenance: {
-                      type: 'object',
-                      properties: {
-                        source: { type: 'string' },
-                        partition: { type: 'string' },
-                        topic: { type: ['string', 'null'] },
-                        subtopic: { type: ['string', 'null'] },
-                      },
-                    },
-                  },
-                },
-              },
-              metadata: {
-                type: 'object',
-                properties: {
-                  query: { type: 'string' },
-                  examVariant: { type: 'string' },
-                  totalResults: { type: 'number' },
-                  maxScore: { type: 'number' },
-                  searchTime: { type: 'number' },
-                },
-              },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                  validation: { type: 'object' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: knowledgeSearchResponseSchema,
+          400: knowledgeErrorResponseSchema,
+          500: knowledgeErrorResponseSchema,
         },
       },
     },
@@ -188,7 +64,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
 
       try {
         // Parse and validate query parameters
-        const queryParams = searchRequestSchema.parse({
+        const queryParams = knowledgeSearchRequestSchema.parse({
           subject: rawQuery.subject,
           examVariant: rawQuery.examVariant,
           query: rawQuery.query,
@@ -297,13 +173,9 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid request parameters',
-              statusCode: 400,
-              validation: error.errors,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid request parameters', {
+            validation: error.errors,
+          });
         }
 
         logger.error(
@@ -317,12 +189,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -334,60 +201,11 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Get a specific knowledge base document by ID',
         tags: ['knowledge-base'],
-        params: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Document ID',
-            },
-          },
-          required: ['id'],
-        },
+        params: knowledgeDocumentParamsSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              document: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  content: { type: 'string' },
-                  subject: { type: 'string' },
-                  exam_variant: { type: ['string', 'null'] },
-                  partition: { type: 'string' },
-                  topic: { type: ['string', 'null'] },
-                  subtopic: { type: ['string', 'null'] },
-                  created_at: { type: 'string' },
-                  updated_at: { type: 'string' },
-                },
-              },
-            },
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: knowledgeDocumentResponseSchema,
+          404: knowledgeErrorResponseSchema,
+          500: knowledgeErrorResponseSchema,
         },
       },
     },
@@ -396,7 +214,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
       let documentId: string | undefined;
 
       try {
-        const { id } = documentParamsSchema.parse(request.params);
+        const { id } = knowledgeDocumentParamsSchema.parse(request.params);
         documentId = id;
 
         logger.info(
@@ -410,12 +228,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         // TODO: Implement document fetching from Supabase
         // For now, return a 404
         void reply.status(404);
-        return {
-          error: {
-            message: 'Document not found',
-            statusCode: 404,
-          },
-        };
+        return makeErrorResponse(404, 'Document not found', { code: 'DOCUMENT_NOT_FOUND' });
       } catch (error) {
         logger.error(
           {
@@ -427,12 +240,7 @@ export const kbRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );

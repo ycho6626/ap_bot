@@ -5,6 +5,16 @@ import { config } from '@ap/shared/config';
 import { getValidStripePriceIds } from '@ap/payments/roles';
 import type { UserRole } from '@ap/shared/types';
 import Stripe from 'stripe';
+import {
+  billingPortalResponseSchema,
+  checkoutRequestSchema,
+  checkoutResponseSchema,
+  paymentsErrorResponseSchema,
+  pricingPlansResponseSchema,
+  makeErrorResponse,
+} from '../schemas';
+import { z } from 'zod';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('payments-routes');
 
@@ -21,6 +31,8 @@ function getStripeClient(): Stripe {
  * Payment routes
  */
 export const paymentRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Get pricing plans
   fastify.get(
     '/plans',
@@ -29,25 +41,8 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
         description: 'Get available pricing plans',
         tags: ['payments'],
         response: {
-          200: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                name: { type: 'string' },
-                description: { type: 'string' },
-                price: { type: 'number' },
-                currency: { type: 'string' },
-                interval: { type: 'string', enum: ['month', 'year'] },
-                features: {
-                  type: 'array',
-                  items: { type: 'string' },
-                },
-                role: { type: 'string' },
-              },
-            },
-          },
+          200: pricingPlansResponseSchema,
+          500: paymentsErrorResponseSchema,
         },
       },
     },
@@ -135,12 +130,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           'Failed to get pricing plans'
         );
         void reply.status(500);
-        return {
-          error: {
-            message: 'Failed to get pricing plans',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Failed to get pricing plans');
       }
     }
   );
@@ -152,61 +142,31 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Create Stripe checkout session',
         tags: ['payments'],
-        body: {
-          type: 'object',
-          properties: {
-            priceId: { type: 'string' },
-          },
-          required: ['priceId'],
-        },
+        body: checkoutRequestSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              url: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: checkoutResponseSchema,
+          400: paymentsErrorResponseSchema,
+          500: paymentsErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       try {
-        const { priceId } = request.body as { priceId: string };
+        const { priceId } = checkoutRequestSchema.parse(request.body);
 
         // Validate price ID
         const validPriceIds = getValidStripePriceIds();
         if (!validPriceIds.includes(priceId) && priceId !== 'price_free') {
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid price ID',
-              statusCode: 400,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid price ID', { code: 'INVALID_PRICE_ID' });
         }
 
         // Handle free plan
         if (priceId === 'price_free') {
           void reply.status(400);
-          return {
-            error: {
-              message: 'Free plan does not require checkout',
-              statusCode: 400,
-            },
-          };
+          return makeErrorResponse(400, 'Free plan does not require checkout', {
+            code: 'FREE_PLAN_CHECKOUT_NOT_ALLOWED',
+          });
         }
 
         // Get user ID from auth (for now, use a placeholder)
@@ -265,12 +225,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(500);
-          return {
-            error: {
-              message: 'Failed to create checkout session',
-              statusCode: 500,
-            },
-          };
+          return makeErrorResponse(500, 'Failed to create checkout session');
         }
 
         return {
@@ -278,17 +233,21 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           url: session.url,
         };
       } catch (error) {
+        if (error instanceof z.ZodError) {
+          logger.warn({ errors: error.errors }, 'Invalid checkout session request payload');
+
+          void reply.status(400);
+          return makeErrorResponse(400, 'Invalid request parameters', {
+            validation: error.errors,
+          });
+        }
+
         logger.error(
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to create checkout session'
         );
         void reply.status(500);
-        return {
-          error: {
-            message: 'Failed to create checkout session',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Failed to create checkout session');
       }
     }
   );
@@ -301,24 +260,9 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
         description: 'Create Stripe billing portal session',
         tags: ['payments'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              url: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: billingPortalResponseSchema,
+          400: paymentsErrorResponseSchema,
+          500: paymentsErrorResponseSchema,
         },
       },
     },
@@ -349,12 +293,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
             'Failed to create/find Stripe customer'
           );
           void reply.status(500);
-          return {
-            error: {
-              message: 'Failed to create customer',
-              statusCode: 500,
-            },
-          };
+          return makeErrorResponse(500, 'Failed to create customer');
         }
 
         // Create billing portal session
@@ -392,12 +331,7 @@ export const paymentRoutes: FastifyPluginAsync = async fastify => {
           'Failed to create billing portal session'
         );
         void reply.status(500);
-        return {
-          error: {
-            message: 'Failed to create billing portal session',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Failed to create billing portal session');
       }
     }
   );

@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { jsonSchemaTransform } from 'fastify-type-provider-zod';
 import { createLogger } from '@ap/shared/logger';
 import { initializeTracing } from '@ap/shared/tracing';
 import { config } from '@ap/shared/config';
@@ -12,6 +13,7 @@ import { reviewRoutes } from './routes/review';
 import { authRoutes } from './routes/auth';
 import { paymentRoutes } from './routes/payments';
 import { stripeWebhookRoutes } from './routes/webhooks/stripe';
+import { ensureErrorHandling } from './utils/errorHandling';
 
 /**
  * Initialize OpenTelemetry tracing
@@ -27,7 +29,7 @@ const logger = createLogger('api-gateway');
  * Create Fastify server instance
  */
 export async function createServer() {
-  const server = Fastify({
+  const baseServer = Fastify({
     logger: {
       level: config().LOG_LEVEL,
       serializers: {
@@ -46,6 +48,12 @@ export async function createServer() {
     bodyLimit: 1048576, // 1MB limit for regular requests
   });
 
+  const server = ensureErrorHandling(baseServer, {
+    logError: payload => {
+      logger.error(payload, 'Request error');
+    },
+    getEnvironment: () => config().NODE_ENV,
+  });
   // Register plugins
   await server.register(securityPlugin);
   await server.register(rawBodyPlugin);
@@ -75,6 +83,23 @@ export async function createServer() {
           },
         },
       },
+    },
+    transform: args => {
+      try {
+        return jsonSchemaTransform(args);
+      } catch (error) {
+        logger.error(
+          {
+            url: args.url,
+            schemaKeys: args.schema ? Object.keys(args.schema) : [],
+            responseKeys: args.schema?.response ? Object.keys(args.schema.response) : undefined,
+            schemaPreview: args.schema,
+            error,
+          },
+          'Failed to transform schema for OpenAPI'
+        );
+        throw error;
+      }
     },
   });
 
@@ -108,38 +133,6 @@ export async function createServer() {
   await server.register(authRoutes, { prefix: '/auth' });
   await server.register(paymentRoutes, { prefix: '/payments' });
   await server.register(stripeWebhookRoutes, { prefix: '/webhooks' });
-
-  // Global error handler
-  server.setErrorHandler((error, request, reply) => {
-    logger.error(
-      {
-        error: {
-          message: error.message,
-          stack: error.stack,
-          code: error.code,
-        },
-        request: {
-          method: request.method,
-          url: request.url,
-          headers: request.headers,
-        },
-      },
-      'Request error'
-    );
-
-    // Don't expose internal errors in production
-    const isDevelopment = config().NODE_ENV === 'development';
-    const statusCode = error.statusCode || 500;
-    const message = isDevelopment ? error.message : 'Internal Server Error';
-
-    reply.status(statusCode).send({
-      error: {
-        message,
-        statusCode,
-        ...(isDevelopment && { stack: error.stack }),
-      },
-    });
-  });
 
   // Global request logging
   server.addHook('onRequest', async (request, _reply) => {

@@ -1,6 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { createLogger } from '@ap/shared/logger';
 import type { UserRole } from '@ap/shared/types';
+import { authProfileResponseSchema, apiErrorSchema, makeErrorResponse } from '../schemas';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('auth-routes');
 
@@ -8,6 +10,8 @@ const logger = createLogger('auth-routes');
  * Auth routes
  */
 export const authRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Get user profile
   fastify.get(
     '/profile',
@@ -16,17 +20,8 @@ export const authRoutes: FastifyPluginAsync = async fastify => {
         description: 'Get user profile information',
         tags: ['auth'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              email: { type: 'string' },
-              role: { type: 'string' },
-              examVariant: { type: 'string' },
-              createdAt: { type: 'string' },
-              updatedAt: { type: 'string' },
-            },
-          },
+          200: authProfileResponseSchema,
+          500: apiErrorSchema,
         },
       },
     },
@@ -55,12 +50,7 @@ export const authRoutes: FastifyPluginAsync = async fastify => {
           'Failed to get user profile'
         );
         void reply.status(500);
-        return {
-          error: {
-            message: 'Failed to get user profile',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Failed to get user profile');
       }
     }
   );

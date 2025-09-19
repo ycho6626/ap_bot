@@ -1,0 +1,1958 @@
+openapi: 3.0.0
+info:
+  title: AP Calculus Bot API
+  description: API Gateway for AP Calculus AB/BC tutoring bot with verified answers
+  version: 0.1.0
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas: {}
+paths:
+  /health/:
+    get:
+      tags:
+        - health
+      description: Basic health check endpoint
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  uptime:
+                    type: number
+                  environment:
+                    type: string
+                  version:
+                    type: string
+                required:
+                  - status
+                  - timestamp
+                  - uptime
+                  - environment
+                  - version
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  error:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      supabase:
+                        type: string
+                      openai:
+                        type: string
+                      verifier:
+                        type: string
+                      stripe:
+                        type: string
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - error
+                additionalProperties: false
+  /health/detailed:
+    get:
+      tags:
+        - health
+      description: Detailed health check with dependency status
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  uptime:
+                    type: number
+                  environment:
+                    type: string
+                  version:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      supabase:
+                        type: string
+                      openai:
+                        type: string
+                      verifier:
+                        type: string
+                      stripe:
+                        type: string
+                    required:
+                      - supabase
+                      - openai
+                      - verifier
+                      - stripe
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - uptime
+                  - environment
+                  - version
+                  - dependencies
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  error:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      supabase:
+                        type: string
+                      openai:
+                        type: string
+                      verifier:
+                        type: string
+                      stripe:
+                        type: string
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - error
+                additionalProperties: false
+  /health/ready:
+    get:
+      tags:
+        - health
+      description: Readiness check for Kubernetes
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                required:
+                  - status
+                  - timestamp
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  error:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      supabase:
+                        type: string
+                      openai:
+                        type: string
+                      verifier:
+                        type: string
+                      stripe:
+                        type: string
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - error
+                additionalProperties: false
+  /health/live:
+    get:
+      tags:
+        - health
+      description: Liveness check for Kubernetes
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                required:
+                  - status
+                  - timestamp
+                additionalProperties: false
+  /kb/search:
+    get:
+      tags:
+        - knowledge-base
+      description: Search the knowledge base for relevant content
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - calc
+            default: calc
+          in: query
+          name: subject
+          required: false
+        - schema:
+            type: string
+            enum:
+              - calc_ab
+              - calc_bc
+            default: calc_ab
+          in: query
+          name: examVariant
+          required: false
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+          in: query
+          name: query
+          required: true
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          in: query
+          name: limit
+          required: false
+        - schema:
+            type: number
+            minimum: 0
+            maximum: 1
+            default: 0.1
+          in: query
+          name: minScore
+          required: false
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: includePartitions
+          required: false
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: excludePartitions
+          required: false
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        document:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            content:
+                              type: string
+                            subject:
+                              type: string
+                            exam_variant:
+                              type: string
+                              nullable: true
+                            partition:
+                              type: string
+                            topic:
+                              type: string
+                              nullable: true
+                            subtopic:
+                              type: string
+                              nullable: true
+                            created_at:
+                              type: string
+                            updated_at:
+                              type: string
+                          required:
+                            - id
+                            - content
+                            - subject
+                            - exam_variant
+                            - partition
+                            - topic
+                            - subtopic
+                            - created_at
+                            - updated_at
+                          additionalProperties: false
+                        score:
+                          type: number
+                        snippet:
+                          type: string
+                        provenance:
+                          type: object
+                          properties:
+                            source:
+                              type: string
+                            partition:
+                              type: string
+                            topic:
+                              type: string
+                              nullable: true
+                            subtopic:
+                              type: string
+                              nullable: true
+                          required:
+                            - source
+                            - partition
+                          additionalProperties: false
+                      required:
+                        - document
+                        - score
+                      additionalProperties: false
+                  metadata:
+                    type: object
+                    properties:
+                      query:
+                        type: string
+                      examVariant:
+                        type: string
+                      totalResults:
+                        type: number
+                      maxScore:
+                        type: number
+                      searchTime:
+                        type: number
+                    required:
+                      - query
+                      - examVariant
+                      - totalResults
+                    additionalProperties: false
+                required:
+                  - results
+                  - metadata
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /kb/document/{id}:
+    get:
+      tags:
+        - knowledge-base
+      description: Get a specific knowledge base document by ID
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      content:
+                        type: string
+                      subject:
+                        type: string
+                      exam_variant:
+                        type: string
+                        nullable: true
+                      partition:
+                        type: string
+                      topic:
+                        type: string
+                        nullable: true
+                      subtopic:
+                        type: string
+                        nullable: true
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                    required:
+                      - id
+                      - content
+                      - subject
+                      - exam_variant
+                      - partition
+                      - topic
+                      - subtopic
+                      - created_at
+                      - updated_at
+                    additionalProperties: false
+                required:
+                  - document
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /coach/:
+    post:
+      tags:
+        - coach
+      description: Process a student question using VAM (Verified Answer Mode)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  enum:
+                    - calc
+                  default: calc
+                examVariant:
+                  type: string
+                  enum:
+                    - calc_ab
+                    - calc_bc
+                  default: calc_ab
+                mode:
+                  type: string
+                  enum:
+                    - vam
+                    - standard
+                  default: vam
+                question:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                context:
+                  type: object
+                  properties:
+                    topic:
+                      type: string
+                    subtopic:
+                      type: string
+                    difficulty:
+                      type: string
+                    studentLevel:
+                      type: string
+                      enum:
+                        - beginner
+                        - intermediate
+                        - advanced
+                    previousQuestions:
+                      type: array
+                      items:
+                        type: string
+                    sessionId:
+                      type: string
+                  additionalProperties: false
+              required:
+                - question
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  verified:
+                    type: boolean
+                  trustScore:
+                    type: number
+                  confidence:
+                    type: number
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                            - canonical
+                            - retrieval
+                            - generated
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        snippet:
+                          type: string
+                        score:
+                          type: number
+                      required:
+                        - type
+                        - id
+                      additionalProperties: false
+                    default: []
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    default: []
+                  metadata:
+                    type: object
+                    properties:
+                      examVariant:
+                        type: string
+                      topic:
+                        type: string
+                      subtopic:
+                        type: string
+                      difficulty:
+                        type: string
+                      processingTime:
+                        type: number
+                      retryCount:
+                        type: number
+                    additionalProperties: false
+                required:
+                  - answer
+                  - verified
+                  - trustScore
+                  - confidence
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /coach/health:
+    get:
+      tags:
+        - coach
+      description: Health check for coach service
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  services:
+                    type: object
+                    properties:
+                      vam:
+                        type: string
+                      retrieval:
+                        type: string
+                      verification:
+                        type: string
+                      llm:
+                        type: string
+                    required:
+                      - vam
+                      - retrieval
+                      - verification
+                      - llm
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - services
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  error:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      supabase:
+                        type: string
+                      openai:
+                        type: string
+                      verifier:
+                        type: string
+                      stripe:
+                        type: string
+                    additionalProperties: false
+                required:
+                  - status
+                  - timestamp
+                  - error
+                additionalProperties: false
+  /coach/config:
+    get:
+      tags:
+        - coach
+      description: Get coach configuration
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vam:
+                    type: object
+                    properties:
+                      minTrustThreshold:
+                        type: number
+                      maxRetries:
+                        type: number
+                      enableCanonicalFirst:
+                        type: boolean
+                      enableRetrieval:
+                        type: boolean
+                      enableVerification:
+                        type: boolean
+                      enablePostprocessing:
+                        type: boolean
+                      cacheVerifiedOnly:
+                        type: boolean
+                      suggestionsCount:
+                        type: number
+                    required:
+                      - minTrustThreshold
+                      - maxRetries
+                      - enableCanonicalFirst
+                      - enableRetrieval
+                      - enableVerification
+                      - enablePostprocessing
+                      - cacheVerifiedOnly
+                      - suggestionsCount
+                    additionalProperties: false
+                  supportedSubjects:
+                    type: array
+                    items:
+                      type: string
+                  supportedVariants:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - vam
+                  - supportedSubjects
+                  - supportedVariants
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /review/:
+    post:
+      tags:
+        - review
+      description: Submit a case for human review
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                answer:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                examVariant:
+                  type: string
+                  enum:
+                    - calc_ab
+                    - calc_bc
+                trustScore:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                confidence:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - canonical
+                          - retrieval
+                          - generated
+                      id:
+                        type: string
+                      title:
+                        type: string
+                      snippet:
+                        type: string
+                      score:
+                        type: number
+                    required:
+                      - type
+                      - id
+                    additionalProperties: false
+                metadata:
+                  type: object
+                  properties:
+                    examVariant:
+                      type: string
+                    topic:
+                      type: string
+                    subtopic:
+                      type: string
+                    difficulty:
+                      type: string
+                    processingTime:
+                      type: number
+                    retryCount:
+                      type: number
+                  additionalProperties: false
+              required:
+                - question
+                - answer
+                - examVariant
+                - trustScore
+                - confidence
+              additionalProperties: false
+        required: true
+      responses:
+        "201":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                      - needs_revision
+                  message:
+                    type: string
+                required:
+                  - id
+                  - status
+                  - message
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+    get:
+      tags:
+        - review
+      description: Get pending review cases (teacher only)
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+              - needs_revision
+            default: pending
+          in: query
+          name: status
+          required: false
+        - schema:
+            type: string
+            enum:
+              - calc_ab
+              - calc_bc
+          in: query
+          name: examVariant
+          required: false
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          in: query
+          name: limit
+          required: false
+        - schema:
+            type: integer
+            minimum: 0
+            default: 0
+          in: query
+          name: offset
+          required: false
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cases:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        question:
+                          type: string
+                        answer:
+                          type: string
+                        examVariant:
+                          type: string
+                        trustScore:
+                          type: number
+                        confidence:
+                          type: number
+                          nullable: true
+                        sources:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                                enum:
+                                  - canonical
+                                  - retrieval
+                                  - generated
+                              id:
+                                type: string
+                              title:
+                                type: string
+                              snippet:
+                                type: string
+                              score:
+                                type: number
+                            required:
+                              - type
+                              - id
+                            additionalProperties: false
+                          default: []
+                        metadata:
+                          type: object
+                          properties:
+                            examVariant:
+                              type: string
+                            topic:
+                              type: string
+                            subtopic:
+                              type: string
+                            difficulty:
+                              type: string
+                            processingTime:
+                              type: number
+                            retryCount:
+                              type: number
+                          additionalProperties: false
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - approved
+                            - rejected
+                            - needs_revision
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                      required:
+                        - id
+                        - question
+                        - answer
+                        - examVariant
+                        - trustScore
+                        - status
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                      limit:
+                        type: number
+                      offset:
+                        type: number
+                      hasMore:
+                        type: boolean
+                    required:
+                      - total
+                      - limit
+                      - offset
+                      - hasMore
+                    additionalProperties: false
+                required:
+                  - cases
+                  - pagination
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /review/resolve:
+    post:
+      tags:
+        - review
+      description: Resolve a review case (teacher only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caseId:
+                  type: string
+                action:
+                  type: string
+                  enum:
+                    - approve
+                    - reject
+                    - request_revision
+                feedback:
+                  type: string
+                  maxLength: 1000
+                correctedAnswer:
+                  type: string
+                  maxLength: 10000
+                tags:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - caseId
+                - action
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                      - needs_revision
+                  message:
+                    type: string
+                required:
+                  - id
+                  - status
+                  - message
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /auth/profile:
+    get:
+      tags:
+        - auth
+      description: Get user profile information
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  role:
+                    type: string
+                  examVariant:
+                    type: string
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                  - id
+                  - email
+                  - role
+                  - examVariant
+                  - createdAt
+                  - updatedAt
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /payments/plans:
+    get:
+      tags:
+        - payments
+      description: Get available pricing plans
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    price:
+                      type: number
+                    currency:
+                      type: string
+                    interval:
+                      type: string
+                      enum:
+                        - month
+                        - year
+                    features:
+                      type: array
+                      items:
+                        type: string
+                    role:
+                      type: string
+                  required:
+                    - id
+                    - name
+                    - description
+                    - price
+                    - currency
+                    - interval
+                    - features
+                    - role
+                  additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /payments/checkout:
+    post:
+      tags:
+        - payments
+      description: Create Stripe checkout session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                priceId:
+                  type: string
+              required:
+                - priceId
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  url:
+                    type: string
+                required:
+                  - id
+                  - url
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /payments/stripe/portal:
+    post:
+      tags:
+        - payments
+      description: Create Stripe billing portal session
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /webhooks/stripe:
+    post:
+      tags:
+        - webhooks
+      description: Handle Stripe webhook events
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: stripe-signature
+          required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  message:
+                    type: string
+                required:
+                  - success
+                  - message
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /webhooks/stripe/health:
+    get:
+      tags:
+        - webhooks
+      description: Health check for Stripe webhook endpoint
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                  provider:
+                    type: string
+                required:
+                  - status
+                  - timestamp
+                  - provider
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /webhooks/stripe/config:
+    get:
+      tags:
+        - webhooks
+      description: Get Stripe webhook configuration
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  supportedEvents:
+                    type: array
+                    items:
+                      type: string
+                  signatureVerification:
+                    type: boolean
+                  idempotency:
+                    type: boolean
+                required:
+                  - provider
+                  - supportedEvents
+                  - signatureVerification
+                  - idempotency
+                additionalProperties: false
+        "500":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: Human readable error message
+                      statusCode:
+                        type: number
+                        description: HTTP status code associated with the error
+                      code:
+                        type: string
+                        description: Application-specific error code
+                      validation:
+                        description: Validation errors when applicable
+                      details:
+                        description: Additional error context
+                    required:
+                      - message
+                      - statusCode
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+servers:
+  - url: http://localhost:3001
+    description: Development server

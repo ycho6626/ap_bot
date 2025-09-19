@@ -1,8 +1,20 @@
 import { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import { createLogger } from '@ap/shared/logger';
 import { withSpan } from '@ap/shared/tracing';
 import { supabaseService } from '@ap/shared/supabase';
+import {
+  reviewSubmitRequestSchema,
+  reviewSubmitResponseSchema,
+  reviewErrorResponseSchema,
+  reviewQuerySchema,
+  reviewCasesResponseSchema,
+  reviewResolveRequestSchema,
+  reviewResolveResponseSchema,
+  reviewNotFoundResponseSchema,
+  makeErrorResponse,
+} from '../schemas';
+import { z } from 'zod';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('review-routes');
 
@@ -38,18 +50,7 @@ const reviewCaseSchema = z.object({
 });
 */
 
-/**
- * Review action schema
- */
-const reviewActionSchema = z.object({
-  caseId: z.string(),
-  action: z.enum(['approve', 'reject', 'request_revision']),
-  feedback: z.string().optional(),
-  correctedAnswer: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
-
-type ReviewActionInput = z.infer<typeof reviewActionSchema>;
+type ReviewActionInput = z.infer<typeof reviewResolveRequestSchema>;
 
 type ReviewCaseUpdate = {
   status: 'approved' | 'rejected' | 'needs_revision';
@@ -63,6 +64,8 @@ type ReviewCaseUpdate = {
  * Review routes for HiTL (Human-in-the-Loop) functionality
  */
 export const reviewRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Submit a case for review
   fastify.post(
     '/',
@@ -70,104 +73,11 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Submit a case for human review',
         tags: ['review'],
-        body: {
-          type: 'object',
-          properties: {
-            question: {
-              type: 'string',
-              minLength: 1,
-              maxLength: 2000,
-              description: 'Student question',
-            },
-            answer: {
-              type: 'string',
-              minLength: 1,
-              maxLength: 10000,
-              description: 'Generated answer',
-            },
-            examVariant: {
-              type: 'string',
-              enum: ['calc_ab', 'calc_bc'],
-              description: 'Exam variant',
-            },
-            trustScore: {
-              type: 'number',
-              minimum: 0,
-              maximum: 1,
-              description: 'Trust score of the answer',
-            },
-            confidence: {
-              type: 'number',
-              minimum: 0,
-              maximum: 1,
-              description: 'Confidence score of the answer',
-            },
-            sources: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: {
-                    type: 'string',
-                    enum: ['canonical', 'retrieval', 'generated'],
-                  },
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  snippet: { type: 'string' },
-                  score: { type: 'number' },
-                },
-              },
-              description: 'Sources used for the answer',
-            },
-            metadata: {
-              type: 'object',
-              properties: {
-                examVariant: { type: 'string' },
-                topic: { type: 'string' },
-                subtopic: { type: 'string' },
-                difficulty: { type: 'string' },
-                processingTime: { type: 'number' },
-                retryCount: { type: 'number' },
-              },
-              description: 'Additional metadata',
-            },
-          },
-          required: ['question', 'answer', 'examVariant', 'trustScore', 'confidence'],
-        },
+        body: reviewSubmitRequestSchema,
         response: {
-          201: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              status: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                  validation: { type: 'object' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          201: reviewSubmitResponseSchema,
+          400: reviewErrorResponseSchema,
+          500: reviewErrorResponseSchema,
         },
       },
     },
@@ -175,36 +85,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       const requestId = request.requestId ?? request.id;
 
       try {
-        const requestData = z
-          .object({
-            question: z.string().min(1).max(2000),
-            answer: z.string().min(1).max(10000),
-            examVariant: z.enum(['calc_ab', 'calc_bc']),
-            trustScore: z.number().min(0).max(1),
-            confidence: z.number().min(0).max(1),
-            sources: z
-              .array(
-                z.object({
-                  type: z.enum(['canonical', 'retrieval', 'generated']),
-                  id: z.string(),
-                  title: z.string().optional(),
-                  snippet: z.string().optional(),
-                  score: z.number().optional(),
-                })
-              )
-              .optional(),
-            metadata: z
-              .object({
-                examVariant: z.string(),
-                topic: z.string().optional(),
-                subtopic: z.string().optional(),
-                difficulty: z.string().optional(),
-                processingTime: z.number(),
-                retryCount: z.number(),
-              })
-              .optional(),
-          })
-          .parse(request.body);
+        const requestData = reviewSubmitRequestSchema.parse(request.body);
 
         logger.info(
           {
@@ -276,13 +157,9 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid request parameters',
-              statusCode: 400,
-              validation: error.errors,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid request parameters', {
+            validation: error.errors,
+          });
         }
 
         logger.error(
@@ -295,12 +172,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -312,93 +184,11 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Get pending review cases (teacher only)',
         tags: ['review'],
-        querystring: {
-          type: 'object',
-          properties: {
-            status: {
-              type: 'string',
-              enum: ['pending', 'approved', 'rejected', 'needs_revision'],
-              default: 'pending',
-              description: 'Filter by status',
-            },
-            examVariant: {
-              type: 'string',
-              enum: ['calc_ab', 'calc_bc'],
-              description: 'Filter by exam variant',
-            },
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 100,
-              default: 20,
-              description: 'Maximum number of cases to return',
-            },
-            offset: {
-              type: 'integer',
-              minimum: 0,
-              default: 0,
-              description: 'Number of cases to skip',
-            },
-          },
-        },
+        querystring: reviewQuerySchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              cases: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    question: { type: 'string' },
-                    answer: { type: 'string' },
-                    examVariant: { type: 'string' },
-                    trustScore: { type: 'number' },
-                    confidence: { type: 'number' },
-                    sources: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          type: { type: 'string' },
-                          id: { type: 'string' },
-                          title: { type: 'string' },
-                          snippet: { type: 'string' },
-                          score: { type: 'number' },
-                        },
-                      },
-                    },
-                    metadata: { type: 'object' },
-                    status: { type: 'string' },
-                    created_at: { type: 'string' },
-                    updated_at: { type: 'string' },
-                  },
-                },
-              },
-              pagination: {
-                type: 'object',
-                properties: {
-                  total: { type: 'number' },
-                  limit: { type: 'number' },
-                  offset: { type: 'number' },
-                  hasMore: { type: 'boolean' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: reviewCasesResponseSchema,
+          400: reviewErrorResponseSchema,
+          500: reviewErrorResponseSchema,
         },
       },
     },
@@ -406,16 +196,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       const requestId = request.requestId ?? request.id;
 
       try {
-        const queryParams = z
-          .object({
-            status: z
-              .enum(['pending', 'approved', 'rejected', 'needs_revision'])
-              .default('pending'),
-            examVariant: z.enum(['calc_ab', 'calc_bc']).optional(),
-            limit: z.number().int().min(1).max(100).default(20),
-            offset: z.number().int().min(0).default(0),
-          })
-          .parse(request.query);
+        const queryParams = reviewQuerySchema.parse(request.query);
 
         logger.info(
           {
@@ -494,13 +275,9 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid query parameters',
-              statusCode: 400,
-              validation: error.errors,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid query parameters', {
+            validation: error.errors,
+          });
         }
 
         logger.error(
@@ -513,12 +290,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );
@@ -530,82 +302,12 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       schema: {
         description: 'Resolve a review case (teacher only)',
         tags: ['review'],
-        body: {
-          type: 'object',
-          properties: {
-            caseId: {
-              type: 'string',
-              description: 'Review case ID',
-            },
-            action: {
-              type: 'string',
-              enum: ['approve', 'reject', 'request_revision'],
-              description: 'Action to take',
-            },
-            feedback: {
-              type: 'string',
-              maxLength: 1000,
-              description: 'Feedback for the case',
-            },
-            correctedAnswer: {
-              type: 'string',
-              maxLength: 10000,
-              description: 'Corrected answer (for request_revision)',
-            },
-            tags: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Tags for categorization',
-            },
-          },
-          required: ['caseId', 'action'],
-        },
+        body: reviewResolveRequestSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              status: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                  validation: { type: 'object' },
-                },
-              },
-            },
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: {
-                type: 'object',
-                properties: {
-                  message: { type: 'string' },
-                  statusCode: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: reviewResolveResponseSchema,
+          400: reviewErrorResponseSchema,
+          404: reviewNotFoundResponseSchema,
+          500: reviewErrorResponseSchema,
         },
       },
     },
@@ -614,7 +316,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
       let requestData: ReviewActionInput | undefined;
 
       try {
-        const parsedRequest = reviewActionSchema.parse(request.body);
+        const parsedRequest = reviewResolveRequestSchema.parse(request.body);
         requestData = parsedRequest;
         const actionRequest = parsedRequest;
 
@@ -703,20 +405,35 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           }
         );
 
+        const derivedStatus =
+          updatedCase.status ??
+          (actionRequest.action === 'approve'
+            ? 'approved'
+            : actionRequest.action === 'reject'
+              ? 'rejected'
+              : 'needs_revision');
+
+        const actionMessage =
+          actionRequest.action === 'approve'
+            ? 'approved'
+            : actionRequest.action === 'reject'
+              ? 'rejected'
+              : 'marked for revision';
+
         logger.info(
           {
             caseId: actionRequest.caseId,
             action: actionRequest.action,
-            newStatus: updatedCase.status,
+            newStatus: derivedStatus,
             requestId,
           },
           'Review case resolved successfully'
         );
 
         return {
-          id: updatedCase.id,
-          status: updatedCase.status,
-          message: `Case ${actionRequest.action}d successfully`,
+          id: updatedCase.id ?? actionRequest.caseId,
+          status: derivedStatus,
+          message: `Case ${actionMessage} successfully`,
         };
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -730,13 +447,9 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(400);
-          return {
-            error: {
-              message: 'Invalid request parameters',
-              statusCode: 400,
-              validation: error.errors,
-            },
-          };
+          return makeErrorResponse(400, 'Invalid request parameters', {
+            validation: error.errors,
+          });
         }
 
         if (error instanceof Error && error.message.includes('not found')) {
@@ -749,12 +462,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
           );
 
           void reply.status(404);
-          return {
-            error: {
-              message: 'Review case not found',
-              statusCode: 404,
-            },
-          };
+          return makeErrorResponse(404, 'Review case not found', { code: 'REVIEW_NOT_FOUND' });
         }
 
         logger.error(
@@ -767,12 +475,7 @@ export const reviewRoutes: FastifyPluginAsync = async fastify => {
         );
 
         void reply.status(500);
-        return {
-          error: {
-            message: 'Internal server error',
-            statusCode: 500,
-          },
-        };
+        return makeErrorResponse(500, 'Internal server error');
       }
     }
   );

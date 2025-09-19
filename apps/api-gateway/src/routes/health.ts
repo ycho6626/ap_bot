@@ -1,6 +1,13 @@
 import { FastifyPluginAsync } from 'fastify';
 import { createLogger } from '@ap/shared/logger';
 import { config } from '@ap/shared/config';
+import {
+  basicHealthSchema,
+  detailedHealthSchema,
+  healthUnhealthySchema,
+  readinessSchema,
+} from '../schemas';
+import { ensureErrorHandling } from '../utils/errorHandling';
 
 const logger = createLogger('health-routes');
 
@@ -8,6 +15,8 @@ const logger = createLogger('health-routes');
  * Health check routes
  */
 export const healthRoutes: FastifyPluginAsync = async fastify => {
+  ensureErrorHandling(fastify);
+
   // Basic health check
   fastify.get(
     '/',
@@ -16,16 +25,8 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         description: 'Basic health check endpoint',
         tags: ['health'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              uptime: { type: 'number' },
-              environment: { type: 'string' },
-              version: { type: 'string' },
-            },
-          },
+          200: basicHealthSchema,
+          503: healthUnhealthySchema,
         },
       },
     },
@@ -78,42 +79,8 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         description: 'Detailed health check with dependency status',
         tags: ['health'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              uptime: { type: 'number' },
-              environment: { type: 'string' },
-              version: { type: 'string' },
-              dependencies: {
-                type: 'object',
-                properties: {
-                  supabase: { type: 'string' },
-                  openai: { type: 'string' },
-                  verifier: { type: 'string' },
-                  stripe: { type: 'string' },
-                },
-              },
-            },
-          },
-          503: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              error: { type: 'string' },
-              dependencies: {
-                type: 'object',
-                properties: {
-                  supabase: { type: 'string' },
-                  openai: { type: 'string' },
-                  verifier: { type: 'string' },
-                  stripe: { type: 'string' },
-                },
-              },
-            },
-          },
+          200: detailedHealthSchema,
+          503: healthUnhealthySchema,
         },
       },
     },
@@ -190,21 +157,8 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         description: 'Readiness check for Kubernetes',
         tags: ['health'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-            },
-          },
-          503: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-              error: { type: 'string' },
-            },
-          },
+          200: readinessSchema,
+          503: healthUnhealthySchema,
         },
       },
     },
@@ -250,13 +204,7 @@ export const healthRoutes: FastifyPluginAsync = async fastify => {
         description: 'Liveness check for Kubernetes',
         tags: ['health'],
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              timestamp: { type: 'string' },
-            },
-          },
+          200: readinessSchema,
         },
       },
     },
