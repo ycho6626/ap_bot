@@ -25,6 +25,13 @@
     },
     "clean": {
       "cache": false
+    },
+    "storybook": {
+      "cache": false
+    },
+    "storybook:build": {
+      "dependsOn": ["^storybook:build"],
+      "outputs": ["storybook-static/**", "apps/**/storybook-static/**"]
     }
   }
 }

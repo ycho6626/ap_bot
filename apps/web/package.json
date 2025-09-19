@@ -16,7 +16,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:e2e:smoke:ci": "playwright test --grep @smoke --reporter=github",
-    "clean": "rm -rf .next dist coverage playwright-report"
+    "storybook": "storybook dev --config-dir .storybook",
+    "storybook:build": "storybook build --config-dir .storybook",
+    "clean": "rm -rf .next dist coverage playwright-report storybook-static"
   },
   "dependencies": {
     "@ap/payments": "workspace:*",
