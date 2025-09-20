@@ -188,6 +188,7 @@ export default function LessonsPage() {
                           key={index}
                           onClick={() => handleSearch(query)}
                           className='block w-full text-left text-sm text-gray-600 hover:text-primary-600 hover:bg-gray-50 px-2 py-1 rounded transition-colors'
+                          data-testid='search-history-item'
                         >
                           {query}
                         </button>
@@ -219,6 +220,8 @@ export default function LessonsPage() {
                           key={`${result.document.id}-${index}`}
                           className='hover:bg-gray-50 cursor-pointer transition-colors'
                           onClick={() => handleDocumentClick(result.document.id)}
+                          data-testid='search-result'
+                          data-document-id={result.document.id}
                         >
                           <CardContent className='p-3'>
                             <div className='flex items-start justify-between mb-2'>
@@ -269,7 +272,7 @@ export default function LessonsPage() {
           {/* Main Content */}
           <div className='flex-1'>
             {selectedDocument ? (
-              <Card>
+              <Card data-testid='lesson-viewer'>
                 {/* Document Header */}
                 <CardHeader className='border-b'>
                   <div className='flex items-start justify-between mb-4'>

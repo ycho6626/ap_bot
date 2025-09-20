@@ -242,10 +242,15 @@ export default function PricingPage() {
               className={`relative ${
                 plan.popular ? 'border-2 border-primary-500 shadow-xl scale-105' : 'border-gray-200'
               }`}
+              data-testid='plan-card'
+              data-plan-id={plan.id}
             >
               {plan.popular && (
                 <div className='absolute -top-4 left-1/2 transform -translate-x-1/2'>
-                  <Badge className='bg-primary-500 text-white px-4 py-1'>
+                  <Badge
+                    className='bg-primary-500 text-white px-4 py-1'
+                    data-testid='plan-popular-badge'
+                  >
                     <Star className='w-3 h-3 mr-1' />
                     Most Popular
                   </Badge>
@@ -276,6 +281,7 @@ export default function PricingPage() {
                   disabled={isCreatingCheckout === plan.id}
                   className={`w-full ${plan.popular ? 'bg-primary-600 hover:bg-primary-700' : ''}`}
                   variant={plan.popular ? 'default' : 'outline'}
+                  data-testid='plan-cta'
                 >
                   {isCreatingCheckout === plan.id ? (
                     <>

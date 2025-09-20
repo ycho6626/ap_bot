@@ -1,11 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
+
+const setFieldValue = async (field: Locator, value: string) => {
+  await field.click();
+  await field.fill('');
+  if (value.length > 0) {
+    await field.type(value);
+  }
+};
 
 test.describe('Coach Page - Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Mock the API responses for consistent testing
     await page.route('**/coach', async route => {
-      const request = route.request();
-      const postData = JSON.parse(request.postData() || '{}');
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
+      const postData = JSON.parse(route.request().postData() || '{}');
 
       // Mock response based on the question
       if (postData.question?.includes('derivative of x^2')) {
@@ -33,19 +45,20 @@ test.describe('Coach Page - Smoke Tests', () => {
             ],
           }),
         });
-      } else {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            answer: 'This is a mock response for testing purposes.',
-            verified: false,
-            trustScore: 0.75,
-            sources: [],
-            suggestions: [],
-          }),
-        });
+        return;
       }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          answer: 'This is a mock response for testing purposes.',
+          verified: false,
+          trustScore: 0.75,
+          sources: [],
+          suggestions: [],
+        }),
+      });
     });
 
     await page.goto('/coach');
@@ -60,7 +73,7 @@ test.describe('Coach Page - Smoke Tests', () => {
 
     // Type the question
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Find derivative of x^2');
+    await setFieldValue(input, 'Find derivative of x^2');
     await expect(input).toHaveValue('Find derivative of x^2');
 
     // Submit the question
@@ -94,23 +107,32 @@ test.describe('Coach Page - Smoke Tests', () => {
 
   test('should show loading state during processing', async ({ page }) => {
     // Add a delay to the API response to test loading state
-    await page.route('**/api/coach', async route => {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          answer: 'Test response',
-          verified: true,
-          trustScore: 0.9,
-          sources: [],
-          suggestions: [],
-        }),
-      });
-    });
+    await page.route(
+      '**/coach',
+      async route => {
+        if (route.request().method() !== 'POST') {
+          await route.continue();
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            answer: 'Test response',
+            verified: true,
+            trustScore: 0.9,
+            sources: [],
+            suggestions: [],
+          }),
+        });
+      },
+      { times: 1 }
+    );
 
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test question');
+    await setFieldValue(input, 'Test question');
     await page.locator('button[type="submit"]').click();
 
     // Should show loading state
@@ -141,7 +163,7 @@ test.describe('Coach Page - Smoke Tests', () => {
   test('should clear chat when clear button is clicked', async ({ page }) => {
     // First send a message
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test question');
+    await setFieldValue(input, 'Test question');
     await page.locator('button[type="submit"]').click();
 
     // Wait for message to appear
@@ -165,7 +187,7 @@ test.describe('Coach Page - Smoke Tests', () => {
   test('should show citations sidebar when citations button is clicked', async ({ page }) => {
     // Send a question that returns sources
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Find derivative of x^2');
+    await setFieldValue(input, 'Find derivative of x^2');
     await page.locator('button[type="submit"]').click();
 
     // Wait for response
@@ -174,23 +196,26 @@ test.describe('Coach Page - Smoke Tests', () => {
     // Click citations button
     const citationsButton = page.locator('button:has-text("Citations")');
     await expect(citationsButton).toBeEnabled();
-    await citationsButton.click();
+    await citationsButton.focus();
+    await page.keyboard.press('Enter');
 
     // Citations sidebar should appear
-    await expect(page.locator('text=Sources')).toBeVisible();
-    await expect(page.locator('text=Power Rule for Derivatives')).toBeVisible();
+    const sidebar = page.getByTestId('citations-sidebar');
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar.getByText('Power Rule for Derivatives')).toBeVisible();
 
     // Close sidebar
-    const closeButton = page.locator('button:has-text("Close")');
-    await closeButton.click();
+    const closeButton = page.getByRole('button', { name: 'Close citations sidebar' });
+    await closeButton.focus();
+    await page.keyboard.press('Enter');
 
-    // Sidebar should be hidden
-    await expect(page.locator('text=Sources')).not.toBeVisible();
+    // Sidebar should be removed
+    await expect(page.locator('[data-testid="citations-sidebar"]')).toHaveCount(0);
   });
 
   test('should handle keyboard shortcuts', async ({ page }) => {
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test keyboard shortcut');
+    await setFieldValue(input, 'Test keyboard shortcut');
 
     // Press Enter to submit
     await input.press('Enter');
@@ -201,10 +226,10 @@ test.describe('Coach Page - Smoke Tests', () => {
 
   test('should show character count', async ({ page }) => {
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test question');
+    await setFieldValue(input, 'Test question');
 
     // Character count should be visible
-    await expect(page.locator('text=13/2000')).toBeVisible();
+    await expect(page.getByTestId('char-count')).toHaveText('13/2000');
   });
 
   test('should disable submit button when input is empty', async ({ page }) => {
@@ -215,13 +240,13 @@ test.describe('Coach Page - Smoke Tests', () => {
 
     // Fill input
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test');
+    await setFieldValue(input, 'Test');
 
     // Should be enabled
     await expect(submitButton).toBeEnabled();
 
     // Clear input
-    await input.fill('');
+    await setFieldValue(input, '');
 
     // Should be disabled again
     await expect(submitButton).toBeDisabled();

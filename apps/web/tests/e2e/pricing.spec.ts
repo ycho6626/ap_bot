@@ -4,6 +4,11 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Mock the pricing plans API
     await page.route('**/payments/plans', async route => {
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -66,8 +71,12 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
     // Mock the Stripe checkout API
     await page.route('**/payments/checkout', async route => {
-      const request = route.request();
-      const postData = JSON.parse(request.postData() || '{}');
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
+      const postData = JSON.parse(route.request().postData() || '{}');
 
       await route.fulfill({
         status: 200,
@@ -95,16 +104,18 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
     await expect(page.locator('h3.font-semibold:has-text("Teacher")').first()).toBeVisible();
 
     // Find the Pro plan (most popular)
-    const proCard = page.locator('text=Pro').locator('..').locator('..').locator('..');
-    await expect(proCard).toContainText('Most Popular');
+    const proCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
+    await expect(proCard.getByTestId('plan-popular-badge')).toBeVisible();
     await expect(proCard).toContainText('$19/month');
 
     // Click the Pro upgrade button
-    const proButton = proCard.locator('button:has-text("Upgrade Now")');
+    const proButton = proCard.getByTestId('plan-cta');
     await expect(proButton).toBeVisible();
 
     // Intercept the checkout API call
-    const checkoutPromise = page.waitForRequest('**/api/payments/stripe/checkout');
+    const checkoutPromise = page.waitForRequest('**/payments/checkout');
 
     // Click the button
     await proButton.click();
@@ -118,19 +129,21 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
     // Verify redirect URL was used (in a real test, you'd check the actual redirect)
     // For this smoke test, we'll verify the API was called correctly
-    expect(request.url()).toContain('/api/payments/stripe/checkout');
+    expect(request.url()).toContain('/payments/checkout');
   });
 
   test('should handle Teacher plan checkout', async ({ page }) => {
     // Find the Teacher plan
-    const teacherCard = page.locator('text=Teacher').locator('..').locator('..').locator('..');
+    const teacherCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Teacher' }) });
     await expect(teacherCard).toContainText('$49/month');
 
     // Click the Teacher upgrade button
-    const teacherButton = teacherCard.locator('button:has-text("Upgrade Now")');
+    const teacherButton = teacherCard.getByTestId('plan-cta');
 
     // Intercept the checkout API call
-    const checkoutPromise = page.waitForRequest('**/api/payments/stripe/checkout');
+    const checkoutPromise = page.waitForRequest('**/payments/checkout');
 
     // Click the button
     await teacherButton.click();
@@ -145,11 +158,13 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
   test('should redirect Free plan to coach page', async ({ page }) => {
     // Find the Free plan
-    const freeCard = page.locator('text=Free').locator('..').locator('..').locator('..');
+    const freeCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Free' }) });
     await expect(freeCard).toContainText('$0/month');
 
     // Click the Free plan button
-    const freeButton = freeCard.locator('button:has-text("Get Started")');
+    const freeButton = freeCard.getByTestId('plan-cta');
 
     // Click and verify navigation
     await freeButton.click();
@@ -161,23 +176,34 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
   test('should show loading state during checkout creation', async ({ page }) => {
     // Add delay to checkout API response
-    await page.route('**/api/payments/stripe/checkout', async route => {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 'cs_test_123',
-          url: 'https://checkout.stripe.com/c/pay/cs_test_123',
-          success_url: 'http://localhost:3000/account?success=true',
-          cancel_url: 'http://localhost:3000/pricing?canceled=true',
-        }),
-      });
-    });
+    await page.route(
+      '**/payments/checkout',
+      async route => {
+        if (route.request().method() !== 'POST') {
+          await route.continue();
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'cs_test_123',
+            url: 'https://checkout.stripe.com/c/pay/cs_test_123',
+            success_url: 'http://localhost:3000/account?success=true',
+            cancel_url: 'http://localhost:3000/pricing?canceled=true',
+          }),
+        });
+      },
+      { times: 1 }
+    );
 
     // Find the Pro plan
-    const proCard = page.locator('text=Pro').locator('..').locator('..').locator('..');
-    const proButton = proCard.locator('button:has-text("Upgrade Now")');
+    const proCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
+    const proButton = proCard.getByTestId('plan-cta');
 
     // Click the button
     await proButton.click();
@@ -191,14 +217,18 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
   test('should display all pricing features correctly', async ({ page }) => {
     // Check Free plan features
-    const freeCard = page.locator('text=Free').locator('..').locator('..').locator('..');
+    const freeCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Free' }) });
     await expect(freeCard).toContainText('5 questions per day');
     await expect(freeCard).toContainText('Basic explanations');
     await expect(freeCard).toContainText('Public knowledge base');
     await expect(freeCard).toContainText('AB & BC support');
 
     // Check Pro plan features
-    const proCard = page.locator('text=Pro').locator('..').locator('..').locator('..');
+    const proCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
     await expect(proCard).toContainText('Unlimited questions');
     await expect(proCard).toContainText('Verified answers with trust scores');
     await expect(proCard).toContainText('Step-by-step solutions');
@@ -207,7 +237,9 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
     await expect(proCard).toContainText('Citations and sources');
 
     // Check Teacher plan features
-    const teacherCard = page.locator('text=Teacher').locator('..').locator('..').locator('..');
+    const teacherCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Teacher' }) });
     await expect(teacherCard).toContainText('Everything in Pro');
     await expect(teacherCard).toContainText('Private knowledge base');
     await expect(teacherCard).toContainText('Student progress tracking');
@@ -218,10 +250,12 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
   });
 
   test('should show popular badge on Pro plan', async ({ page }) => {
-    const proCard = page.locator('text=Pro').locator('..').locator('..').locator('..');
+    const proCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
 
     // Should have popular badge
-    await expect(proCard).toContainText('Most Popular');
+    await expect(proCard.getByTestId('plan-popular-badge')).toBeVisible();
 
     // Should have different styling (border)
     await expect(proCard).toHaveClass(/border-primary-500/);
@@ -253,7 +287,12 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
 
   test('should handle checkout API errors gracefully', async ({ page }) => {
     // Mock checkout API to return error
-    await page.route('**/api/payments/stripe/checkout', async route => {
+    await page.route('**/payments/checkout', async route => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
@@ -264,8 +303,10 @@ test.describe('Pricing Page - Checkout Smoke Tests', () => {
     });
 
     // Find the Pro plan
-    const proCard = page.locator('text=Pro').locator('..').locator('..').locator('..');
-    const proButton = proCard.locator('button:has-text("Upgrade Now")');
+    const proCard = page
+      .getByTestId('plan-card')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
+    const proButton = proCard.getByTestId('plan-cta');
 
     // Click the button
     await proButton.click();

@@ -43,9 +43,8 @@ const supabase = createClient(
  */
 async function getAuthToken(): Promise<string | null> {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const result = await supabase.auth.getSession();
+    const session = result?.data?.session;
     return session?.access_token ?? null;
   } catch (error) {
     reportWarning('Failed to get auth session:', error);

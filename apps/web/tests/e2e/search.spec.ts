@@ -1,11 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
+
+const setFieldValue = async (field: Locator, value: string) => {
+  await field.click();
+  await field.fill('');
+  if (value.length > 0) {
+    await field.type(value);
+  }
+};
 
 test.describe('Lessons Page - Search Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Mock the search API response
     await page.route('**/kb/search**', async route => {
-      const request = route.request();
-      const url = new URL(request.url());
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
+
+      const url = new URL(route.request().url());
       const query = url.searchParams.get('query') || '';
 
       // Mock response for derivative search
@@ -101,13 +113,13 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
     await expect(searchInput).toBeVisible();
 
     // Type search query
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
 
     // Wait for search results to appear
     await expect(page.locator('text=2 results found')).toBeVisible();
 
     // Verify we have more than 0 results
-    const results = page.locator('[data-testid="search-result"], .space-y-3 > div');
+    const results = page.getByTestId('search-result');
     await expect(results).toHaveCount(2);
 
     // Check first result
@@ -125,26 +137,29 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
   test('should open first lesson and verify math rendering', async ({ page }) => {
     // Search for derivative
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
 
     // Wait for results
     await expect(page.locator('text=2 results found')).toBeVisible();
 
     // Click on first result
-    const firstResult = page.locator('[data-testid="search-result"], .space-y-3 > div').first();
+    const firstResult = page.getByTestId('search-result').first();
     await firstResult.click();
 
     // Wait for document to open
-    await expect(page.locator('text=Derivatives')).toBeVisible();
-    await expect(page.locator('text=Definition and Basic Rules')).toBeVisible();
+    const lessonViewer = page.getByTestId('lesson-viewer');
+    await expect(lessonViewer).toBeVisible();
+    await expect(lessonViewer.getByText('Derivatives')).toBeVisible();
+    await expect(lessonViewer.getByText('Definition and Basic Rules')).toBeVisible();
 
     // Verify math content is rendered (should contain LaTeX)
-    await expect(page.locator("text=f'(x)")).toBeVisible();
-    await expect(page.locator('text=lim[h→0]')).toBeVisible();
+    await expect(lessonViewer.locator("text=f'(x)")).toBeVisible();
+    await expect(lessonViewer.locator('text=lim[h→0]')).toBeVisible();
 
     // Verify close button works
     const closeButton = page.locator('button:has-text("Close")');
-    await closeButton.click();
+    await closeButton.focus();
+    await page.keyboard.press('Enter');
 
     // Should return to search view
     await expect(page.locator('text=Welcome to AP Calculus Lessons')).toBeVisible();
@@ -171,18 +186,27 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
   test('should show search history', async ({ page }) => {
     // Perform a search
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
     await page.waitForTimeout(500); // Wait for debounced search
 
     // Clear search
-    await searchInput.fill('');
+    await setFieldValue(searchInput, '');
 
     // Search history should appear
     await expect(page.locator('text=Recent Searches')).toBeVisible();
-    await expect(page.locator('text=derivative')).toBeVisible();
+    await expect
+      .poll(async () =>
+        page.getByTestId('search-history-item').filter({ hasText: 'derivative' }).count()
+      )
+      .toBeGreaterThan(0);
+
+    const historyItem = page
+      .getByTestId('search-history-item')
+      .filter({ hasText: 'derivative' })
+      .first();
 
     // Click on history item
-    await page.locator('text=derivative').click();
+    await historyItem.click();
 
     // Should perform search again
     await expect(page.locator('text=2 results found')).toBeVisible();
@@ -190,7 +214,13 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
 
   test('should show loading state during search', async ({ page }) => {
     // Add delay to API response
-    await page.route('**/api/kb/search', async route => {
+    await page.unroute('**/kb/search**');
+    await page.route('**/kb/search**', async route => {
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
+
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
       await route.fulfill({
         status: 200,
@@ -224,7 +254,7 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
     });
 
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('test');
+    await setFieldValue(searchInput, 'test');
 
     // Should show loading state
     await expect(page.locator('text=Searching...')).toBeVisible();
@@ -236,7 +266,7 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
   test('should show no results message when no matches found', async ({ page }) => {
     // Search for something that won't match
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('nonexistent topic');
+    await setFieldValue(searchInput, 'nonexistent topic');
 
     // Wait for no results message
     await expect(page.locator('text=No lessons found for your search')).toBeVisible();
@@ -245,26 +275,27 @@ test.describe('Lessons Page - Search Smoke Tests', () => {
   test('should display partition badges correctly', async ({ page }) => {
     // Search for derivative
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
 
     // Wait for results
     await expect(page.locator('text=2 results found')).toBeVisible();
 
     // Check partition badges
-    const publicBadges = page.locator('text=Public');
+    const publicBadges = page.getByTestId('search-result').filter({ hasText: 'Public' });
     await expect(publicBadges).toHaveCount(2);
   });
 
   test('should show match percentages', async ({ page }) => {
     // Search for derivative
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
 
     // Wait for results
     await expect(page.locator('text=2 results found')).toBeVisible();
 
     // Check match percentages
-    await expect(page.locator('text=95% match')).toBeVisible();
-    await expect(page.locator('text=88% match')).toBeVisible();
+    const matches = page.getByTestId('search-result');
+    await expect(matches.first()).toContainText('95% match');
+    await expect(matches.nth(1)).toContainText('88% match');
   });
 });

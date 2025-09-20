@@ -302,7 +302,9 @@ export default function CoachPage() {
                   disabled={isLoading}
                 />
                 <div className='flex justify-between items-center mt-2'>
-                  <span className='text-xs text-gray-500'>{input.length}/2000</span>
+                  <span className='text-xs text-gray-500' data-testid='char-count'>
+                    {input.length}/2000
+                  </span>
                   <div className='text-xs text-gray-500'>
                     Press Enter to send, Shift+Enter for new line
                   </div>

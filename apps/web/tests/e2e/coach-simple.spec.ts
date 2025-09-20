@@ -1,4 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
+
+const setFieldValue = async (field: Locator, value: string) => {
+  await field.click();
+  await field.fill('');
+  if (value.length > 0) {
+    await field.type(value);
+  }
+};
 
 test.describe('Coach Page - Simple Smoke Tests', () => {
   test('should visit /coach and display basic elements @smoke', async ({ page }) => {
@@ -37,7 +45,7 @@ test.describe('Coach Page - Simple Smoke Tests', () => {
     await expect(submitButton).toBeDisabled();
 
     // Type something
-    await input.fill('Find derivative of x^2');
+    await setFieldValue(input, 'Find derivative of x^2');
 
     // Should be enabled now
     await expect(submitButton).toBeEnabled();
@@ -48,9 +56,9 @@ test.describe('Coach Page - Simple Smoke Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     const input = page.locator('textarea[placeholder*="Ask a"]');
-    await input.fill('Test question');
+    await setFieldValue(input, 'Test question');
 
     // Character count should be visible
-    await expect(page.locator('text=13/2000')).toBeVisible();
+    await expect(page.getByTestId('char-count')).toHaveText('13/2000');
   });
 });

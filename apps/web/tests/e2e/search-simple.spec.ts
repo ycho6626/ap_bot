@@ -1,4 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
+
+const setFieldValue = async (field: Locator, value: string) => {
+  await field.click();
+  await field.fill('');
+  if (value.length > 0) {
+    await field.type(value);
+  }
+};
 
 test.describe('Lessons Page - Simple Smoke Tests', () => {
   test('should visit /lessons and display basic elements @smoke', async ({ page }) => {
@@ -26,7 +34,7 @@ test.describe('Lessons Page - Simple Smoke Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('derivative');
+    await setFieldValue(searchInput, 'derivative');
 
     // Should have the value
     await expect(searchInput).toHaveValue('derivative');

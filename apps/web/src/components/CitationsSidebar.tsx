@@ -49,7 +49,10 @@ export function CitationsSidebar({
   };
 
   return (
-    <div className={cn('w-80 bg-white border border-gray-200 rounded-lg shadow-lg', className)}>
+    <div
+      className={cn('w-80 bg-white border border-gray-200 rounded-lg shadow-lg', className)}
+      data-testid='citations-sidebar'
+    >
       {/* Header */}
       <div className='flex items-center justify-between p-4 border-b border-gray-200'>
         <div className='flex items-center space-x-2'>
@@ -69,7 +72,7 @@ export function CitationsSidebar({
       <div className='p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto'>
         {/* Sources */}
         {sources.length > 0 && (
-          <div>
+          <div data-testid='citations-sources'>
             <h4 className='text-sm font-medium text-gray-900 mb-3'>Sources Used</h4>
             <div className='space-y-3'>
               {sources.map((source, index) => (
