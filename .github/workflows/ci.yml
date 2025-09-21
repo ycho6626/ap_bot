@@ -20,7 +20,6 @@ jobs:
         with:
           version: 8
           run_install: false
-          cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @ap/shared build
       - run: pnpm lint
@@ -40,7 +39,6 @@ jobs:
         with:
           version: 8
           run_install: false
-          cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
@@ -58,7 +56,6 @@ jobs:
         with:
           version: 8
           run_install: false
-          cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm coverage
       - name: Upload coverage to Codecov
@@ -80,10 +77,11 @@ jobs:
         with:
           version: 8
           run_install: false
-          cache: true
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm --filter @ap/web test:e2e:smoke:ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - run: CI=1 pnpm --filter @ap/web test:e2e:smoke:ci
 
   python-tests:
     name: Python Tests
