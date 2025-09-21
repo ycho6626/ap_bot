@@ -35,7 +35,7 @@ export function ExamVariantSelector({ value, onChange, className }: ExamVariantS
       setIsOpen(false);
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      setIsOpen(!isOpen);
+      setIsOpen(prev => !prev);
     } else if (e.key === 'ArrowDown' && !isOpen) {
       e.preventDefault();
       setIsOpen(true);
@@ -57,7 +57,7 @@ export function ExamVariantSelector({ value, onChange, className }: ExamVariantS
     <div className={cn('relative', className)} ref={dropdownRef}>
       <button
         type='button'
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(prev => !prev)}
         onKeyDown={handleKeyDown}
         className={cn(
           'btn btn-outline flex items-center space-x-2 min-w-[140px]',

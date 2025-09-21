@@ -148,9 +148,10 @@ test.describe('Coach Page - Smoke Tests', () => {
     await expect(variantSelector).toContainText('AB');
 
     // Change to BC
-    await variantSelector.click();
-    const bcOption = page.locator('text=BC').first();
-    await bcOption.click();
+    await variantSelector.focus();
+    await variantSelector.press('Enter');
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await page.getByRole('option', { name: /AP Calculus BC/ }).click();
 
     // Verify change
     await expect(variantSelector).toContainText('BC');
