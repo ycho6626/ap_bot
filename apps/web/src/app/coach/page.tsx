@@ -57,7 +57,8 @@ export default function CoachPage() {
   // Focus input on mount for non-touch devices to avoid popping mobile keyboard
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const prefersCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+    const prefersCoarsePointer =
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
     if (prefersCoarsePointer) return;
 
     inputRef.current?.focus();
