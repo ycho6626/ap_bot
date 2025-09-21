@@ -80,7 +80,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: pnpm --filter @ap/web exec playwright install --with-deps
       - run: CI=1 pnpm --filter @ap/web test:e2e:smoke:ci
 
   python-tests:
