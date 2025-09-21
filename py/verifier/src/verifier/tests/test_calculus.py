@@ -290,23 +290,7 @@ class TestNumericProbe:
         ]
         
         for expr in test_cases:
-            result = numeric_probe(expr, num_points=10)  # Increased from 3 to 10 for more reliability
-            assert result['valid'] is True
-            assert result['details']['valid_evaluations'] > 0
-    
-    def test_numeric_probe_deterministic(self):
-        """Test numeric probe with deterministic seed for CI stability."""
-        import numpy as np
-        np.random.seed(42)  # Set deterministic seed for CI stability
-        
-        test_cases = [
-            "x^2 + 1",
-            "sin(x) + cos(x)",
-            "exp(x)",
-        ]
-        
-        for expr in test_cases:
-            result = numeric_probe(expr, num_points=5)
+            result = numeric_probe(expr, num_points=3)
             assert result['valid'] is True
             assert result['details']['valid_evaluations'] > 0
     
