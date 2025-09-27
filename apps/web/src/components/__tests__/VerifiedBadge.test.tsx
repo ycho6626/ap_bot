@@ -29,4 +29,14 @@ describe('VerifiedBadge', () => {
     const badge = screen.getByText('Verified');
     expect(badge).toBeInTheDocument();
   });
+
+  it('matches snapshot for verified state', () => {
+    const { container } = render(<VerifiedBadge verified={true} />);
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('matches snapshot for not verified state', () => {
+    const { container } = render(<VerifiedBadge verified={false} />);
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

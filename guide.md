@@ -157,8 +157,15 @@ NODE_ENV=production
 
 3. **Deploy**
    - Deploy the API gateway
-   - Copy the deployment URL
-   - Update `NEXT_PUBLIC_API_URL` in web app
+  - Copy the deployment URL
+
+## 🧪 Snapshot & Visual Testing
+
+- Run deterministic component snapshots with `CI=1 pnpm --filter @ap/web test`. Snapshot fixtures live in `apps/web/src/components/__tests__/__snapshots__`.
+- Capture and verify Storybook-driven golden screenshots with `CI=1 pnpm visual`. The Playwright suite builds Storybook once, serves the static output, then records artifacts under `apps/web/tests/visual/__screenshots__`.
+- Update golden baselines intentionally via `CI=1 pnpm visual:update`; review and commit the generated `.png` files.
+- The Storybook preview clamps `Date.now`/`Math.random` for deterministic rendering. Avoid adding non-deterministic data without providing similar guards.
+- For new flows, add stories (pages or shared widgets) plus Vitest snapshots before capturing visuals to keep coverage meaningful and reviewable.
 
 ### 3.2 Deploy Python Services (Optional)
 

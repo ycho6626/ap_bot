@@ -16,6 +16,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:e2e:smoke:ci": "playwright test --grep @smoke --reporter=github",
+    "visual": "CI=1 playwright test -c playwright.visual.config.ts --reporter=line,html",
+    "visual:update": "CI=1 playwright test -c playwright.visual.config.ts --reporter=line,html --update-snapshots",
     "storybook": "storybook dev --config-dir .storybook",
     "storybook:build": "storybook build --config-dir .storybook",
     "clean": "rm -rf .next dist coverage playwright-report storybook-static"
@@ -56,6 +58,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
+    "@storybook/jest": "^0.2.3",
+    "@storybook/testing-library": "^0.2.2",
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.10",
     "@testing-library/jest-dom": "^6.8.0",
@@ -73,6 +77,8 @@
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.0",
     "jsdom": "^23.0.0",
+    "msw": "^2.11.3",
+    "msw-storybook-addon": "^2.0.5",
     "playwright": "^1.40.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.3.0",
@@ -81,5 +87,10 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

@@ -41,4 +41,9 @@ describe('TrustMeter', () => {
     render(<TrustMeter score={0.854} />);
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '85');
   });
+
+  it('matches snapshot for medium trust', () => {
+    const { container } = render(<TrustMeter score={0.72} />);
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

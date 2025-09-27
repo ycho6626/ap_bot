@@ -32,6 +32,11 @@
     "storybook:build": {
       "dependsOn": ["^storybook:build"],
       "outputs": ["storybook-static/**", "apps/**/storybook-static/**"]
+    },
+    "visual": {
+      "dependsOn": ["^visual"],
+      "outputs": ["apps/**/tests/visual/__screenshots__/**"],
+      "cache": false
     }
   }
 }

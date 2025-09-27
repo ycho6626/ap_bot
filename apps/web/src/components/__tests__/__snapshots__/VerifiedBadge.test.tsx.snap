@@ -1,0 +1,68 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VerifiedBadge > matches snapshot for not verified state 1`] = `
+<div
+  class="verified-badge bg-warning-100 text-warning-800"
+>
+  <svg
+    class="lucide lucide-alert-circle h-3 w-3 mr-1"
+    data-testid="not-verified-icon"
+    fill="none"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+    />
+    <line
+      x1="12"
+      x2="12"
+      y1="8"
+      y2="12"
+    />
+    <line
+      x1="12"
+      x2="12.01"
+      y1="16"
+      y2="16"
+    />
+  </svg>
+  Not Verified
+</div>
+`;
+
+exports[`VerifiedBadge > matches snapshot for verified state 1`] = `
+<div
+  class="verified-badge bg-success-100 text-success-800"
+>
+  <svg
+    class="lucide lucide-check-circle h-3 w-3 mr-1"
+    data-testid="verified-icon"
+    fill="none"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+    width="24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+    />
+    <path
+      d="m9 11 3 3L22 4"
+    />
+  </svg>
+  Verified
+</div>
+`;

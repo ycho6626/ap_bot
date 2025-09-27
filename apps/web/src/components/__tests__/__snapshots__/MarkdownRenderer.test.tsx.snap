@@ -1,0 +1,52 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MathMarkdownRenderer > matches snapshot for markdown content 1`] = `
+<div
+  class="prose prose-sm max-w-none"
+>
+  <h1>
+    Snapshot Heading
+  </h1>
+  
+
+  <p
+    node="[object Object]"
+  >
+    This 
+    <strong>
+      content
+    </strong>
+     verifies rendering consistency.
+  </p>
+</div>
+`;
+
+exports[`MathMarkdownRenderer > matches snapshot for math markdown content 1`] = `
+<div
+  class="prose prose-sm max-w-none"
+>
+  <p
+    node="[object Object]"
+  >
+    The derivative of 
+    <code
+      node="[object Object]"
+    >
+      $x^3$
+    </code>
+     is 
+    <code
+      node="[object Object]"
+    >
+      $3x^2$
+    </code>
+     and $
+    <code
+      node="[object Object]"
+    >
+      $\\int_0^1 x^2 dx = \\frac{1}{3}$
+    </code>
+    $
+  </p>
+</div>
+`;

@@ -160,6 +160,22 @@ describe('MathMarkdownRenderer', () => {
     });
   });
 
+  it('matches snapshot for markdown content', () => {
+    const content = '# Snapshot Heading\n\nThis **content** verifies rendering consistency.';
+    const { container } = render(<MarkdownRenderer content={content} />);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('matches snapshot for math markdown content', async () => {
+    const content = 'The derivative of $x^3$ is $3x^2$ and $$\\int_0^1 x^2 dx = \\frac{1}{3}$$';
+    const { container } = render(<MathMarkdownRenderer content={content} />);
+
+    await waitFor(() => {
+      expect(container.firstChild).toMatchSnapshot();
+    });
+  });
+
   it('should apply custom className', () => {
     const content = 'Test content with $x^2$';
     const { container } = render(

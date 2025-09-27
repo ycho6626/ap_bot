@@ -92,4 +92,12 @@ describe('CitationsSidebar', () => {
 
     expect(container.firstChild).toHaveClass('custom-class');
   });
+
+  it('matches snapshot with sources and suggestions', () => {
+    const { container } = render(
+      <CitationsSidebar sources={mockSources} suggestions={mockSuggestions} onClose={vi.fn()} />
+    );
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });
