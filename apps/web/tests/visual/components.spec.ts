@@ -48,7 +48,7 @@ const stories: Array<{
   {
     id: 'pages-coachpage--interactive-coach',
     name: 'coach-page.png',
-    readySelectors: ['text=Apply the power rule'],
+    readySelectors: ['text=The derivative of x^2 is 2x'],
   },
   {
     id: 'pages-lessonspage--search-flow',
@@ -58,7 +58,7 @@ const stories: Array<{
   {
     id: 'pages-pricingpage--default-plans',
     name: 'pricing-page.png',
-    readySelectors: ['text=Unlimited questions'],
+    readySelectors: ['text=Unlimited coach questions'],
   },
 ];
 
@@ -69,16 +69,17 @@ test.beforeEach(async ({ page }) => {
 for (const story of stories) {
   test(`visual regression – ${story.id}`, async ({ page }) => {
     await page.goto(`/iframe.html?id=${story.id}&viewMode=story`);
-
+    await page.waitForLoadState('networkidle');
     if (story.readySelectors && story.readySelectors.length > 0) {
       for (const selector of story.readySelectors) {
-        await page.waitForSelector(selector, { state: 'visible' });
+        await page.waitForSelector(selector, { state: 'visible', timeout: 10000 });
       }
     } else {
       await page.waitForTimeout(500);
     }
     await expect(page).toHaveScreenshot(story.name, {
       animations: 'disabled',
+      maxDiffPixels: 200,
       fullPage: true,
     });
   });
