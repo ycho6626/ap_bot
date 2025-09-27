@@ -35,7 +35,7 @@ export function ExamVariantSelector({ value, onChange, className }: ExamVariantS
       setIsOpen(false);
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      setIsOpen(prev => !prev);
+      setIsOpen(true);
     } else if (e.key === 'ArrowDown' && !isOpen) {
       e.preventDefault();
       setIsOpen(true);
@@ -43,6 +43,15 @@ export function ExamVariantSelector({ value, onChange, className }: ExamVariantS
       e.preventDefault();
       setIsOpen(false);
     }
+  };
+
+  const handleButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Keyboard-triggered clicks report detail 0; we've already toggled via keydown
+    if (event.detail === 0) {
+      return;
+    }
+
+    setIsOpen(prev => !prev);
   };
 
   const handleOptionKeyDown = (e: React.KeyboardEvent, variant: ExamVariant) => {
@@ -57,7 +66,7 @@ export function ExamVariantSelector({ value, onChange, className }: ExamVariantS
     <div className={cn('relative', className)} ref={dropdownRef}>
       <button
         type='button'
-        onClick={() => setIsOpen(prev => !prev)}
+        onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
         className={cn(
           'btn btn-outline flex items-center space-x-2 min-w-[140px]',
