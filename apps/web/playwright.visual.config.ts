@@ -10,6 +10,7 @@ export default defineConfig({
     screenshot: 'off',
     video: 'off',
     viewport: { width: 1280, height: 720 },
+    timezoneId: 'UTC',
   },
   projects: [
     {

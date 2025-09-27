@@ -12,70 +12,96 @@ const preview: Preview = {
       const restoreRef = useRef<{ restore: () => void } | null>(null);
 
       useEffect(() => {
-        if (typeof window !== 'undefined') {
-          if (!(window as { ResizeObserver?: unknown }).ResizeObserver) {
-            class MockResizeObserver {
-              observe() {
-                return void 0;
-              }
-              unobserve() {
-                return void 0;
-              }
-              disconnect() {
-                return void 0;
-              }
+        if (typeof window === 'undefined') {
+          return;
+        }
+
+        const fixedStart = new Date('2024-01-01T00:32:53Z').getTime();
+        const originalDateConstructor = window.Date;
+        const originalGlobalDate = globalThis.Date;
+        const originalDateNow = Date.now;
+        const originalRandom = Math.random;
+
+        class MockDate extends originalDateConstructor {
+          static offset = 0;
+
+          constructor(...args: ConstructorParameters<typeof originalDateConstructor>) {
+            if (args.length === 0) {
+              super(MockDate.now());
+              return;
             }
 
-            (window as { ResizeObserver: typeof MockResizeObserver }).ResizeObserver = MockResizeObserver;
+            super(...args);
           }
 
-          if (!(window as { IntersectionObserver?: unknown }).IntersectionObserver) {
-            class MockIntersectionObserver {
-              observe() {
-                return void 0;
-              }
-              unobserve() {
-                return void 0;
-              }
-              disconnect() {
-                return void 0;
-              }
-            }
-
-            (window as { IntersectionObserver: typeof MockIntersectionObserver }).IntersectionObserver =
-              MockIntersectionObserver;
-          }
-
-          if (!window.matchMedia) {
-            window.matchMedia = query => ({
-              matches: query.includes('pointer: coarse'),
-              media: query,
-              onchange: null,
-              addListener() {
-                return void 0;
-              },
-              removeListener() {
-                return void 0;
-              },
-              addEventListener() {
-                return void 0;
-              },
-              removeEventListener() {
-                return void 0;
-              },
-              dispatchEvent() {
-                return false;
-              },
-            });
+          static now() {
+            const current = fixedStart + MockDate.offset;
+            MockDate.offset += 1000;
+            return current;
           }
         }
 
-        const fixedNow = new Date('2024-01-01T12:00:00Z').getTime();
-        const originalDateNow = Date.now;
-        const originalRandom = Math.random;
-        let seed = 1;
+        MockDate.offset = 0;
+        (window as { Date: DateConstructor }).Date = MockDate as unknown as DateConstructor;
+        (globalThis as { Date: DateConstructor }).Date = MockDate as unknown as DateConstructor;
 
-        Date.now = () => fixedNow;
+        if (!(window as { ResizeObserver?: unknown }).ResizeObserver) {
+          class MockResizeObserver {
+            observe() {
+              return void 0;
+            }
+            unobserve() {
+              return void 0;
+            }
+            disconnect() {
+              return void 0;
+            }
+          }
+
+          (window as { ResizeObserver: typeof MockResizeObserver }).ResizeObserver = MockResizeObserver;
+        }
+
+        if (!(window as { IntersectionObserver?: unknown }).IntersectionObserver) {
+          class MockIntersectionObserver {
+            observe() {
+              return void 0;
+            }
+            unobserve() {
+              return void 0;
+            }
+            disconnect() {
+              return void 0;
+            }
+          }
+
+          (window as { IntersectionObserver: typeof MockIntersectionObserver }).IntersectionObserver =
+            MockIntersectionObserver;
+        }
+
+        if (!window.matchMedia) {
+          window.matchMedia = query => ({
+            matches: query.includes('pointer: coarse'),
+            media: query,
+            onchange: null,
+            addListener() {
+              return void 0;
+            },
+            removeListener() {
+              return void 0;
+            },
+            addEventListener() {
+              return void 0;
+            },
+            removeEventListener() {
+              return void 0;
+            },
+            dispatchEvent() {
+              return false;
+            },
+          });
+        }
+
+        let seed = 1;
         Math.random = () => {
           const x = Math.sin(seed++) * 10000;
           return x - Math.floor(x);
@@ -83,8 +109,10 @@ const preview: Preview = {
 
         restoreRef.current = {
           restore: () => {
-            Date.now = originalDateNow;
             Math.random = originalRandom;
+            Date.now = originalDateNow;
+            (window as { Date: DateConstructor }).Date = originalDateConstructor;
+            (globalThis as { Date: DateConstructor }).Date = originalGlobalDate;
           },
         };
 

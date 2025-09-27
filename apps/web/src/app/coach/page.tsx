@@ -68,11 +68,13 @@ export default function CoachPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    const userTimestamp = Date.now();
+
     const userMessage: ChatMessage = {
-      id: `user_${Date.now()}`,
+      id: `user_${userTimestamp}`,
       type: 'user',
       content: input.trim(),
-      timestamp: new Date(),
+      timestamp: new Date(userTimestamp),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -82,11 +84,13 @@ export default function CoachPage() {
     try {
       const response = await coach(input.trim(), examVariant);
 
+      const assistantTimestamp = Date.now();
+
       const assistantMessage: ChatMessage = {
-        id: `assistant_${Date.now()}`,
+        id: `assistant_${assistantTimestamp}`,
         type: 'assistant',
         content: response.answer,
-        timestamp: new Date(),
+        timestamp: new Date(assistantTimestamp),
         verified: response.verified,
         trustScore: response.trustScore,
         sources: response.sources,
@@ -98,12 +102,14 @@ export default function CoachPage() {
       reportError('Error asking coach:', error);
       toast.error('Failed to get answer. Please try again.');
 
+      const errorTimestamp = Date.now();
+
       const errorMessage: ChatMessage = {
-        id: `error_${Date.now()}`,
+        id: `error_${errorTimestamp}`,
         type: 'assistant',
         content:
           'I apologize, but I encountered an error while processing your question. Please try again or rephrase your question.',
-        timestamp: new Date(),
+        timestamp: new Date(errorTimestamp),
         verified: false,
         trustScore: 0,
       };
